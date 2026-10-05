@@ -1,0 +1,900 @@
+import { seedBookingAnswers } from "@/lib/data/booking-questions";
+import { serviceById } from "@/lib/data/menu";
+import { PRATICIENNES, coversInterval, isSalonClosed } from "@/lib/data/praticiennes";
+import { SALON_CLOSING, SALON_OPENING, minutesToTime, timeToMinutes } from "@/lib/data/time";
+import type { BeneficiaryKind, RendezVous, Reservation } from "@/lib/data/types";
+
+/** Périodes affichables au Planning (ADR 0020). Mois (rouvert par ADR 0024) retiré par ADR 0025 :
+ *  absent du Figma de référence, qui ne montre que Jour/Semaine. */
+export type PlanningPeriod = "jour" | "semaine";
+
+export { GRID_END, SALON_CLOSING, SALON_OPENING, minutesToTime, timeToMinutes } from "@/lib/data/time";
+
+/** A calendar day as "YYYY-MM-DD" (local). */
+export function dateISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Today as "YYYY-MM-DD". */
+export function todayISO(): string {
+  return dateISO(new Date());
+}
+
+/** "YYYY-MM-DD" for a day `offset` days from now — used to keep the demo seed clustered around
+ *  "today" whatever the real date is. */
+function seedDay(offset: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return dateISO(d);
+}
+
+/** ISO timestamp `n` minutes before now — `createdAt` of the seed's fresh online bookings, so the
+ *  « Réservations reçues » band of the Accueil can say « reçue il y a 4 min ». */
+function minutesAgo(n: number): string {
+  return new Date(Date.now() - n * 60_000).toISOString();
+}
+
+/** Le dimanche qui vient (aujourd'hui si on est dimanche) — le jour le plus chargé du salon. */
+function nextSunday(): string {
+  return seedDay((7 - new Date().getDay()) % 7);
+}
+
+/** Id de réservation : `RV-<epoch ms>-<9 caractères base36>` (ex. RV-1787664806861-hupke9br1). */
+export function newReservationId(): string {
+  return `RV-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
+}
+
+/** Même format que `newReservationId`, mais fixe et déterministe pour le seed — pas de
+ *  `Date.now()` ni de `Math.random()` au chargement du module, sinon l'hydratation SSR/CSR diverge. */
+function seedReservationId(n: number): string {
+  return `RV-${1787664000000 + n * 3_600_000}-${((n * 48271 * 2147483647) % 36 ** 9).toString(36).padStart(9, "0")}`;
+}
+
+/** Un dimanche chargé : une réservation d'une prestation par ligne [payeuse, prestation, praticienne, heure].
+ *  Leurs ids (`seedReservationId(101…)`) évitent toute collision avec le seed écrit à la main (1…99). */
+function sundayRush(): SeedReservation[] {
+  const lines: [string, string, string, string][] = [
+    ["cl-1", "coiffure-silk-press", "bineta", "10:00"],
+    ["cl-2", "manucure-pedicure-manucure-spa-express", "gnagna", "10:00"],
+    ["cl-3", "soin-du-visage-hydrafacial-deep-clean", "marie-dominique", "11:00"],
+    ["cl-4", "coiffure-tresses-cheveux", "fatou", "10:30"],
+    ["cl-5", "spa-relax-me-time", "adja", "11:00"],
+    ["cl-6", "coiffure-coupe-transformation", "michelle", "11:30"],
+    ["cl-7", "manucure-pedicure-jelly-pedicure", "gnagna", "12:00"],
+    ["cl-8", "coiffure-soin-complet", "henry", "12:30"],
+    ["cl-9", "epilation-epilation-sourcils", "marie-dominique", "14:00"],
+    ["cl-10", "coiffure-silk-press", "bineta", "14:00"],
+    ["cl-1", "spa-soin-du-dos", "adja", "14:30"],
+    ["cl-3", "manucure-pedicure-smooth-pedicure", "gnagna", "15:00"],
+    ["cl-6", "coiffure-shampoing-sechage", "michelle", "15:00"],
+    ["cl-9", "soin-du-visage-golden-vip-facial", "marie-dominique", "15:30"],
+    ["cl-4", "coiffure-tresses-cheveux", "fatou", "15:30"],
+    ["cl-2", "mini-co-mini-jely-manucure", "adja", "16:30"],
+  ];
+  return lines.map(([payerClientId, serviceId, staffId, start], i) => {
+    const id = seedReservationId(100 + i + 1);
+    return {
+      id,
+      payerClientId,
+      date: nextSunday(),
+      source: "en_ligne" as const,
+      rendezVous: [
+        {
+          id: `rdv-dim-${i + 1}`,
+          reservationId: id,
+          serviceId,
+          staffId,
+          start,
+          durationMin: serviceById(serviceId)?.durationMinutes ?? 60,
+          status: "actif" as const,
+        },
+      ],
+    };
+  });
+}
+
+/** A réservation's calendar day. Absent `date` ⇒ today (walk-ins, legacy). Always read it here. */
+export function reservationDate(r: Pick<Reservation, "date">): string {
+  return r.date ?? todayISO();
+}
+
+/** Les salons où se tient une réservation — ceux de ses rendez-vous (ADR 0036), le salon n'est
+ *  jamais déduit de la praticienne. Presque toujours un seul. Les annulés ne comptent que s'il
+ *  n'y a plus rien d'actif. */
+export function reservationSalonIds(r: Reservation): string[] {
+  const active = r.rendezVous.filter((rv) => rv.status !== "annule");
+  return [...new Set((active.length ? active : r.rendezVous).map((rv) => rv.salonId))];
+}
+
+/** Réservation en ligne pas encore remarquée (« Non vue », ADR 0030) — jamais une réservation
+ *  `comptoir`. Quel que soit son jour : c'est l'arrivée qui compte, pas le passage. */
+export function isUnseenReservation(r: Reservation): boolean {
+  return r.source === "en_ligne" && r.seen === false;
+}
+
+/**
+ * Seed réservations, clustered around "today" (a few days back, a full week ahead) so the Semaine
+ * views of the Planning have something to show. The booking journey lives on the external platform
+ * — here they arrive already made. Each Réservation has one payeur (`payerClientId`) and 1..N
+ * atomic Rendez-vous, possibly in parallel (same start, different praticiennes), possibly for a
+ * friend or a child (`beneficiaryName`), possibly worked by two praticiennes at once
+ * (`secondStaffId`, with `durationMin` already halved). `date` absent ⇒ today.
+ */
+/** Le seed est écrit sans salon : chaque rendez-vous reçoit celui de sa praticienne (`SEED_SALON`),
+ *  fixé avant tout recalage — ensuite, c'est le rendez-vous qui porte le salon (ADR 0036). */
+type SeedReservation = Omit<Reservation, "rendezVous"> & { rendezVous: Omit<RendezVous, "salonId">[] };
+
+/** Le salon où chaque praticienne tenait ses rendez-vous quand le seed a été écrit. */
+const SEED_SALON: Record<string, string> = {
+  bineta: "sea-plaza-bco",
+  fatou: "sea-plaza-bco",
+  "marie-dominique": "sea-plaza-bco",
+  gnagna: "almadies",
+  henry: "almadies",
+  adja: "almadies",
+  michelle: "almadies",
+};
+
+const SEED_RESERVATIONS: SeedReservation[] = [
+  {
+    id: "RV-1787667600000-0qtafz9td",
+    payerClientId: "cl-7",
+    date: seedDay(0),
+    source: "en_ligne",
+    depositPaid: 5000,
+    rendezVous: [
+      // Tissage éligible « à 2 » : deux coiffeuses, temps de chaise divisé (120 → 60).
+      {
+        id: "rdv-1a",
+        reservationId: "RV-1787667600000-0qtafz9td",
+        serviceId: "coiffure-tissage-versatile",
+        staffId: "bineta",
+        secondStaffId: "fatou",
+        start: "10:00",
+        durationMin: 60,
+        status: "actif",
+      },
+      // …pendant qu'une amie (sans fiche) est en manucure à la même heure.
+      {
+        id: "rdv-1b",
+        reservationId: "RV-1787667600000-0qtafz9td",
+        serviceId: "manucure-pedicure-manucure-spa-express",
+        staffId: "gnagna",
+        beneficiaryName: "Awa",
+        start: "10:00",
+        durationMin: 45,
+        status: "actif",
+      },
+    ],
+  },
+  {
+    id: "RV-1787671200000-1hmkvyjmq",
+    payerClientId: "cl-6",
+    date: seedDay(0),
+    source: "en_ligne",
+    rendezVous: [
+      {
+        id: "rdv-2a",
+        reservationId: "RV-1787671200000-1hmkvyjmq",
+        serviceId: "soin-du-visage-glow-me-facial",
+        staffId: "marie-dominique",
+        start: "11:30",
+        durationMin: 60,
+        status: "actif",
+      },
+      {
+        id: "rdv-2b",
+        reservationId: "RV-1787671200000-1hmkvyjmq",
+        serviceId: "epilation-epilation-sourcils",
+        staffId: "marie-dominique",
+        start: "12:30",
+        durationMin: 15,
+        status: "annule",
+      },
+    ],
+  },
+  {
+    id: "RV-1787674800000-28fvbxtg3",
+    payerClientId: "cl-8",
+    date: seedDay(0),
+    source: "en_ligne",
+    depositPaid: 8000,
+    // Pré-commande deux boissons du bar pour patienter pendant le soin.
+    extras: [
+      { kind: "boisson", refId: "boisson-pure-glow", qty: 1 },
+      { kind: "boisson", refId: "boisson-eclat-matcha", qty: 1 },
+    ],
+    rendezVous: [
+      {
+        id: "rdv-3a",
+        reservationId: "RV-1787674800000-28fvbxtg3",
+        serviceId: "spa-relax-me-time",
+        staffId: "gnagna",
+        start: "13:40",
+        durationMin: 80,
+        status: "actif",
+      },
+    ],
+  },
+  {
+    id: "RV-1787678400000-2z95rx39g",
+    payerClientId: "cl-2",
+    date: seedDay(0),
+    source: "en_ligne",
+    // Pré-commande un soin Kérastase à retirer en repartant.
+    extras: [{ kind: "produit", refId: "nutritive-bain-riche-250ml", qty: 1 }],
+    rendezVous: [
+      {
+        id: "rdv-4a",
+        reservationId: "RV-1787678400000-2z95rx39g",
+        serviceId: "coiffure-shampoing-brushing-shampoing-inclus-et-obligatoire",
+        staffId: "michelle",
+        start: "10:00",
+        durationMin: 60,
+        status: "actif",
+      },
+    ],
+  },
+  {
+    id: "RV-1787682000000-3q2g7wd2t",
+    payerClientId: "cl-1",
+    date: seedDay(0),
+    source: "en_ligne",
+    // Vient d'arriver de la plateforme externe, pas encore remarquée (ADR 0030).
+    seen: false,
+    createdAt: minutesAgo(4),
+    rendezVous: [
+      {
+        id: "rdv-5a",
+        reservationId: "RV-1787682000000-3q2g7wd2t",
+        serviceId: "spa-soin-du-dos",
+        staffId: "adja",
+        start: "16:00",
+        durationMin: 90,
+        status: "actif",
+      },
+    ],
+  },
+  {
+    id: "RV-1787685600000-4gvqnvmw6",
+    payerClientId: "cl-3",
+    date: seedDay(0),
+    source: "en_ligne",
+    // Vient d'arriver de la plateforme externe, pas encore remarquée (ADR 0030).
+    seen: false,
+    createdAt: minutesAgo(26),
+    rendezVous: [
+      {
+        id: "rdv-6a",
+        reservationId: "RV-1787685600000-4gvqnvmw6",
+        serviceId: "coiffure-silk-press",
+        staffId: "fatou",
+        start: "13:00",
+        durationMin: 180,
+        status: "actif",
+      },
+      // Une prestation Mini&Co pour sa fille, réglée sur la même note.
+      {
+        id: "rdv-6b",
+        reservationId: "RV-1787685600000-4gvqnvmw6",
+        serviceId: "mini-co-mini-jely-manucure",
+        staffId: "adja",
+        beneficiaryName: "Salématou",
+        start: "13:00",
+        durationMin: 30,
+        status: "actif",
+      },
+    ],
+  },
+
+  // Même prestation « à 2 » deux fois, pour la payeuse puis pour une amie : quatre praticiennes au
+  // total sur ce seul rendez-vous — plus deux boissons pré-commandées. Pas de lien de parenté
+  // précisé (audit UX du 19/09) — non pertinent, non vérifiable dans l'app.
+  {
+    id: "RV-1787743200000-gdwdrjzxy",
+    payerClientId: "cl-5",
+    date: seedDay(0),
+    source: "en_ligne",
+    extras: [
+      { kind: "boisson", refId: "boisson-dragon-mystic", qty: 1 },
+      { kind: "boisson", refId: "boisson-ice-coffee-caramel", qty: 1 },
+    ],
+    rendezVous: [
+      {
+        id: "rdv-22a",
+        reservationId: "RV-1787743200000-gdwdrjzxy",
+        serviceId: "coiffure-tissage-versatile",
+        staffId: "bineta",
+        secondStaffId: "fatou",
+        start: "11:00",
+        durationMin: 60,
+        status: "actif",
+      },
+      {
+        id: "rdv-22b",
+        reservationId: "RV-1787743200000-gdwdrjzxy",
+        serviceId: "coiffure-tissage-versatile",
+        staffId: "michelle",
+        secondStaffId: "henry",
+        beneficiaryName: "Aïda",
+        start: "11:00",
+        durationMin: 60,
+        status: "actif",
+      },
+    ],
+  },
+
+  // Trois femmes sur une même note — la payeuse et deux amies, chacune sa prestation d'onglerie.
+  {
+    id: "RV-1787746800000-h4po7j9rb",
+    payerClientId: "cl-9",
+    date: seedDay(0),
+    source: "en_ligne",
+    extras: [
+      { kind: "produit", refId: "antiseptique-saryna-keys", qty: 1 },
+      { kind: "produit", refId: "damage-repair-oil-saryna-keys", qty: 1 },
+    ],
+    rendezVous: [
+      {
+        id: "rdv-23a",
+        reservationId: "RV-1787746800000-h4po7j9rb",
+        serviceId: "manucure-pedicure-manucure-spa-express",
+        staffId: "gnagna",
+        start: "11:35",
+        durationMin: 45,
+        status: "actif",
+      },
+      {
+        id: "rdv-23b",
+        reservationId: "RV-1787746800000-h4po7j9rb",
+        serviceId: "manucure-pedicure-jelly-pedicure",
+        staffId: "adja",
+        beneficiaryName: "Rokhaya",
+        start: "10:00",
+        durationMin: 65,
+        status: "actif",
+      },
+      {
+        id: "rdv-23c",
+        reservationId: "RV-1787746800000-h4po7j9rb",
+        serviceId: "manucure-pedicure-smooth-pedicure",
+        staffId: "marie-dominique",
+        beneficiaryName: "Marème",
+        start: "10:00",
+        durationMin: 80,
+        status: "actif",
+      },
+    ],
+  },
+
+  // La payeuse + son mari, chacun sa prestation — composition « 1 femme + 1 homme » — avec trois
+  // produits à emporter.
+  {
+    id: "RV-1787750400000-hviynijko",
+    payerClientId: "cl-4",
+    date: seedDay(0),
+    source: "en_ligne",
+    extras: [
+      { kind: "produit", refId: "k-elixir-oil-30ml", qty: 1 },
+      { kind: "produit", refId: "correcteur-fluide-swiss-perfection-haute-couvrance", qty: 1 },
+      { kind: "produit", refId: "peigne-bijou-eclat-de-mariee-finition-or-rose", qty: 1 },
+    ],
+    rendezVous: [
+      {
+        id: "rdv-24a",
+        reservationId: "RV-1787750400000-hviynijko",
+        serviceId: "coiffure-shampoing-sechage",
+        staffId: "michelle",
+        start: "15:00",
+        durationMin: 60,
+        status: "actif",
+      },
+      {
+        id: "rdv-24b",
+        reservationId: "RV-1787750400000-hviynijko",
+        serviceId: "manucure-pedicure-manucure-spa-express",
+        staffId: "gnagna",
+        beneficiaryName: "Moussa",
+        beneficiaryKind: "homme",
+        start: "15:00",
+        durationMin: 45,
+        status: "actif",
+      },
+    ],
+  },
+
+  // Une mère dépose ses deux enfants — composition « 2 enfants », elle ne reçoit elle-même aucune
+  // prestation.
+  {
+    id: "RV-1787754000000-imc93hte1",
+    payerClientId: "cl-10",
+    date: seedDay(0),
+    source: "en_ligne",
+    rendezVous: [
+      {
+        id: "rdv-25a",
+        reservationId: "RV-1787754000000-imc93hte1",
+        serviceId: "mini-co-mini-jely-manucure",
+        staffId: "adja",
+        beneficiaryName: "Khady",
+        start: "11:05",
+        durationMin: 30,
+        status: "actif",
+      },
+      {
+        id: "rdv-25b",
+        reservationId: "RV-1787754000000-imc93hte1",
+        serviceId: "mini-co-mini-cutie-pedicure",
+        staffId: "gnagna",
+        beneficiaryName: "Aïcha",
+        start: "11:00",
+        durationMin: 35,
+        status: "actif",
+      },
+    ],
+  },
+
+  /* ── Il y a trois jours ─────────────────────────────────────── */
+  {
+    id: "RV-1787757600000-jd5jjh37e",
+    payerClientId: "cl-3",
+    date: seedDay(-3),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-26a", reservationId: "RV-1787757600000-jd5jjh37e", serviceId: "coiffure-coupe-transformation", staffId: "michelle", start: "10:00", durationMin: 40, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787761200000-k3ytzgd0r",
+    payerClientId: "cl-8",
+    date: seedDay(-3),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-27a", reservationId: "RV-1787761200000-k3ytzgd0r", serviceId: "soin-du-visage-hydrafacial-deep-clean", staffId: "adja", start: "12:00", durationMin: 75, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787764800000-kus4ffmu4",
+    payerClientId: "cl-10",
+    date: seedDay(-3),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-28a", reservationId: "RV-1787764800000-kus4ffmu4", serviceId: "manucure-pedicure-jelly-pedicure", staffId: "gnagna", start: "16:30", durationMin: 65, status: "actif" },
+    ],
+  },
+
+  /* ── Avant-hier ─────────────────────────────────────────────── */
+  {
+    id: "RV-1787689200000-57p13uwpj",
+    payerClientId: "cl-4",
+    date: seedDay(-2),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-7a", reservationId: "RV-1787689200000-57p13uwpj", serviceId: "manucure-pedicure-jelly-pedicure", staffId: "gnagna", start: "10:00", durationMin: 65, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787692800000-5yibju6iw",
+    payerClientId: "cl-5",
+    date: seedDay(-2),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-8a", reservationId: "RV-1787692800000-5yibju6iw", serviceId: "coiffure-silk-press", staffId: "bineta", start: "14:00", durationMin: 180, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787696400000-6pblztgc9",
+    payerClientId: "cl-9",
+    date: seedDay(-2),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-9a", reservationId: "RV-1787696400000-6pblztgc9", serviceId: "soin-du-visage-hydrafacial-deep-clean", staffId: "marie-dominique", start: "11:00", durationMin: 75, status: "actif" },
+    ],
+  },
+
+  /* ── Hier ───────────────────────────────────────────────────── */
+  {
+    id: "RV-1787700000000-7g4wfsq5m",
+    payerClientId: "cl-2",
+    date: seedDay(-1),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-10a", reservationId: "RV-1787700000000-7g4wfsq5m", serviceId: "coiffure-soin-complet", staffId: "fatou", start: "10:00", durationMin: 130, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787703600000-86y6vrzyz",
+    payerClientId: "cl-6",
+    date: seedDay(-1),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-11a", reservationId: "RV-1787703600000-86y6vrzyz", serviceId: "spa-relax-me-time", staffId: "adja", start: "15:00", durationMin: 80, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787707200000-8xrhbr9sc",
+    payerClientId: "cl-1",
+    date: seedDay(-1),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-12a", reservationId: "RV-1787707200000-8xrhbr9sc", serviceId: "manucure-pedicure-perfect-manucure-russe-gel-sur-ongles-naturels-gainage", staffId: "gnagna", start: "10:00", durationMin: 90, status: "actif" },
+    ],
+  },
+
+  /* ── Demain ─────────────────────────────────────────────────── */
+  {
+    id: "RV-1787710800000-9okrrqjlp",
+    payerClientId: "cl-3",
+    date: seedDay(1),
+    source: "en_ligne",
+    // Réservée en ligne il y a peu pour demain — la bande « Réservations reçues » ne se limite
+    // pas au jour affiché (ADR 0030, rév. 25/09).
+    seen: false,
+    createdAt: minutesAgo(72),
+    rendezVous: [
+      { id: "rdv-13a", reservationId: "RV-1787710800000-9okrrqjlp", serviceId: "coiffure-tissage-versatile", staffId: "bineta", secondStaffId: "fatou", start: "10:00", durationMin: 60, status: "actif" },
+      { id: "rdv-13b", reservationId: "RV-1787710800000-9okrrqjlp", serviceId: "manucure-pedicure-manucure-spa-express", staffId: "gnagna", start: "10:30", durationMin: 45, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787714400000-afe27ptf2",
+    payerClientId: "cl-7",
+    date: seedDay(1),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-14a", reservationId: "RV-1787714400000-afe27ptf2", serviceId: "soin-du-visage-golden-vip-facial", staffId: "marie-dominique", start: "14:00", durationMin: 90, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787718000000-b67cnp38f",
+    payerClientId: "cl-8",
+    date: seedDay(1),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-15a", reservationId: "RV-1787718000000-b67cnp38f", serviceId: "spa-soin-du-dos", staffId: "adja", start: "16:00", durationMin: 90, status: "actif" },
+    ],
+  },
+
+  /* ── Après-demain ───────────────────────────────────────────── */
+  {
+    id: "RV-1787721600000-bx0n3od1s",
+    payerClientId: "cl-5",
+    date: seedDay(2),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-16a", reservationId: "RV-1787721600000-bx0n3od1s", serviceId: "coiffure-coupe-transformation", staffId: "michelle", start: "10:00", durationMin: 40, status: "actif" },
+      { id: "rdv-16b", reservationId: "RV-1787721600000-bx0n3od1s", serviceId: "coiffure-silk-press", staffId: "fatou", start: "11:00", durationMin: 180, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787725200000-cntxjnmv5",
+    payerClientId: "cl-9",
+    date: seedDay(2),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-17a", reservationId: "RV-1787725200000-cntxjnmv5", serviceId: "manucure-pedicure-smooth-pedicure", staffId: "gnagna", start: "13:00", durationMin: 80, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787768400000-lllevewnh",
+    payerClientId: "cl-1",
+    date: seedDay(2),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-29a", reservationId: "RV-1787768400000-lllevewnh", serviceId: "spa-relax-me-time", staffId: "adja", start: "09:30", durationMin: 80, status: "actif" },
+    ],
+  },
+
+  /* ── Dans trois jours ───────────────────────────────────────── */
+  {
+    id: "RV-1787728800000-den7zmwoi",
+    payerClientId: "cl-4",
+    date: seedDay(3),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-18a", reservationId: "RV-1787728800000-den7zmwoi", serviceId: "coiffure-tresses-cheveux", staffId: "bineta", start: "09:30", durationMin: 60, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787732400000-e5gifm6hv",
+    payerClientId: "cl-1",
+    date: seedDay(3),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-19a", reservationId: "RV-1787732400000-e5gifm6hv", serviceId: "soin-du-visage-face-lift-and-glow-raffermissant-lift-et-glow", staffId: "marie-dominique", start: "11:00", durationMin: 70, status: "actif" },
+      { id: "rdv-19b", reservationId: "RV-1787732400000-e5gifm6hv", serviceId: "epilation-epilation-sourcils", staffId: "marie-dominique", start: "12:30", durationMin: 15, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787772000000-mcepbe6gu",
+    payerClientId: "cl-7",
+    date: seedDay(3),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-30a", reservationId: "RV-1787772000000-mcepbe6gu", serviceId: "coiffure-tresses-cheveux", staffId: "henry", start: "14:30", durationMin: 60, status: "actif" },
+    ],
+  },
+
+  /* ── Dans quatre / cinq / six jours ─────────────────────────── */
+  {
+    id: "RV-1787736000000-ew9svlgb8",
+    payerClientId: "cl-6",
+    date: seedDay(4),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-20a", reservationId: "RV-1787736000000-ew9svlgb8", serviceId: "spa-hot-stone-pierres-chaudes", staffId: "adja", start: "10:00", durationMin: 60, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787775600000-n37zrdga7",
+    payerClientId: "cl-10",
+    date: seedDay(4),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-31a", reservationId: "RV-1787775600000-n37zrdga7", serviceId: "coiffure-soin-complet", staffId: "bineta", start: "13:30", durationMin: 130, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787779200000-nu1a7cq3k",
+    payerClientId: "cl-3",
+    date: seedDay(5),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-32a", reservationId: "RV-1787779200000-nu1a7cq3k", serviceId: "manucure-pedicure-perfect-manucure-russe-gel-sur-ongles-naturels-gainage", staffId: "gnagna", start: "10:00", durationMin: 90, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787782800000-okuknbzwx",
+    payerClientId: "cl-9",
+    date: seedDay(5),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-33a", reservationId: "RV-1787782800000-okuknbzwx", serviceId: "coiffure-tissage-versatile", staffId: "michelle", secondStaffId: "henry", start: "10:00", durationMin: 60, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787739600000-fn33bkq4l",
+    payerClientId: "cl-2",
+    date: seedDay(6),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-21a", reservationId: "RV-1787739600000-fn33bkq4l", serviceId: "coiffure-ponytail", staffId: "fatou", start: "14:00", durationMin: 90, status: "actif" },
+    ],
+  },
+  {
+    id: "RV-1787786400000-pbnv3b9qa",
+    payerClientId: "cl-5",
+    date: seedDay(6),
+    source: "en_ligne",
+    rendezVous: [
+      { id: "rdv-34a", reservationId: "RV-1787786400000-pbnv3b9qa", serviceId: "soin-du-visage-golden-vip-facial", staffId: "adja", start: "11:00", durationMin: 90, status: "actif" },
+    ],
+  },
+];
+
+/**
+ * Le seed est écrit en jours relatifs (`seedDay`) : selon le jour de la semaine où l'app s'ouvre, une
+ * praticienne peut s'y retrouver un jour de repos ou hors de ses horaires. On le recale donc au
+ * chargement, sans jamais violer la règle d'or : une praticienne ne tient jamais deux rendez-vous
+ * en même temps (le salon, lui, peut en tenir plusieurs). Pour chaque rendez-vous, par horaire
+ * (l'heure écrite d'abord, puis le premier horaire libre) : même praticienne → collègue du même rôle
+ * (même salon, jamais un autre). Une 2ᵉ praticienne introuvable à l'heure écrite ⇒ prestation seule à pleine
+ * durée. Un rendez-vous impossible à caser ce jour-là (ex. Almadies le lundi, salon fermé) sort
+ * du seed.
+ */
+function fitSeedToSchedules(input: SeedReservation[]): Reservation[] {
+  const placed: { staffId: string; date: string; start: number; end: number }[] = [];
+  const day = (date: string) => new Date(`${date}T00:00:00`);
+  /** Une plage dans le salon de la réservation couvre tout l'intervalle, et la praticienne n'est
+   *  prise nulle part ailleurs — dans aucun des deux salons. */
+  const fits = (staffId: string, date: string, salonId: string, start: number, duration: number) => {
+    const p = PRATICIENNES.find((x) => x.id === staffId);
+    if (!p || !coversInterval(p, day(date), salonId, start, start + duration)) return false;
+    return !placed.some((b) => b.staffId === staffId && b.date === date && start < b.end && b.start < start + duration);
+  };
+  /** La praticienne elle-même, puis ses collègues du même rôle rattachées à ce salon dans le seed —
+   *  un rendez-vous ne change jamais de salon, et une praticienne de passage (ADR 0036) n'hérite
+   *  pas des rendez-vous d'une autre. */
+  const colleagues = (staffId: string, salonId: string) => {
+    const p = PRATICIENNES.find((x) => x.id === staffId);
+    if (!p) return [staffId];
+    const inSalon = PRATICIENNES.filter((x) => x.role === p.role && x.id !== p.id && SEED_SALON[x.id] === salonId);
+    return [p.id, ...inSalon.map((x) => x.id)];
+  };
+
+  // Salon fermé ce jour-là (Almadies le lundi) : rien n'y figure, pas même un rendez-vous annulé.
+  const seed: Reservation[] = input.map((r) => ({
+    ...r,
+    rendezVous: r.rendezVous
+      .map((rv) => ({
+        ...rv,
+        salonId: SEED_SALON[rv.staffId] ?? "sea-plaza-bco",
+        // Réservations en ligne : les réponses aux questions de catégorie de la prise de RDV b&co.
+        ...(r.source === "en_ligne" && {
+          bookingAnswers: seedBookingAnswers(
+            `${r.id}:${rv.beneficiaryClientId ?? rv.beneficiaryName ?? r.payerClientId}`,
+            rv.serviceId,
+          ),
+        }),
+      }))
+      .filter((rv) => !isSalonClosed(rv.salonId, day(reservationDate(r)))),
+  }));
+
+  const order = seed
+    .flatMap((r) => r.rendezVous.map((rv) => ({ date: reservationDate(r), salonId: rv.salonId, rv })))
+    .filter(({ rv }) => rv.status !== "annule")
+    .sort((a, b) => a.date.localeCompare(b.date) || a.rv.start.localeCompare(b.rv.start) || a.rv.id.localeCompare(b.rv.id));
+
+  const fixed = new Map<string, Pick<RendezVous, "staffId" | "secondStaffId" | "start" | "durationMin">>();
+  const dropped = new Set<string>();
+  for (const { date, salonId, rv } of order) {
+    const primaries = colleagues(rv.staffId, salonId);
+    const wanted = timeToMinutes(rv.start);
+    const first = timeToMinutes(SALON_OPENING);
+    const slots = (timeToMinutes(SALON_CLOSING) - first) / 15;
+    const times = [wanted, ...Array.from({ length: slots }, (_, i) => first + i * 15).filter((t) => t !== wanted)];
+
+    let pick: { staffId: string; secondStaffId?: string; start: number; durationMin: number } | undefined;
+    for (const start of times) {
+      for (const staffId of primaries) {
+        if (!fits(staffId, date, salonId, start, rv.durationMin)) continue;
+        if (!rv.secondStaffId) {
+          pick = { staffId, start, durationMin: rv.durationMin };
+          break;
+        }
+        const second = colleagues(rv.secondStaffId, salonId).find(
+          (id) => id !== staffId && fits(id, date, salonId, start, rv.durationMin),
+        );
+        if (second) {
+          pick = { staffId, secondStaffId: second, start, durationMin: rv.durationMin };
+          break;
+        }
+      }
+      if (pick) break;
+      if (rv.secondStaffId && start === wanted) {
+        const full = serviceById(rv.serviceId)?.durationMinutes ?? rv.durationMin * 2;
+        const solo = primaries.find((id) => fits(id, date, salonId, start, full));
+        if (solo) {
+          pick = { staffId: solo, start, durationMin: full };
+          break;
+        }
+      }
+    }
+    if (!pick) {
+      dropped.add(rv.id);
+      continue;
+    }
+
+    for (const id of [pick.staffId, pick.secondStaffId].filter(Boolean) as string[]) {
+      placed.push({ staffId: id, date, start: pick.start, end: pick.start + pick.durationMin });
+    }
+    fixed.set(rv.id, {
+      staffId: pick.staffId,
+      secondStaffId: pick.secondStaffId,
+      start: minutesToTime(pick.start),
+      durationMin: pick.durationMin,
+    });
+  }
+
+  return seed
+    .map((r) => ({
+      ...r,
+      rendezVous: r.rendezVous
+        .filter((rv) => !dropped.has(rv.id))
+        .map((rv) => {
+          const patch = fixed.get(rv.id);
+          if (!patch) return rv;
+          const { secondStaffId, ...rest } = { ...rv, ...patch };
+          return secondStaffId ? { ...rest, secondStaffId } : rest;
+        }),
+    }))
+    .filter((r) => r.rendezVous.length > 0);
+}
+
+export const RESERVATIONS: Reservation[] = fitSeedToSchedules([...SEED_RESERVATIONS, ...sundayRush()]);
+
+/** One rendez-vous with a back-reference to its parent réservation — the rendez-vous-grained row. */
+export type RendezVousRow = { rv: RendezVous; reservation: Reservation };
+
+/** Flatten every rendez-vous of every réservation, keeping a back-reference to its parent. */
+export function flattenRendezVous(reservations: Reservation[]): RendezVousRow[] {
+  return reservations.flatMap((reservation) =>
+    reservation.rendezVous.map((rv) => ({ rv, reservation })),
+  );
+}
+
+/**
+ * The réservation-grained row for the day view (ADR 0014). One line = one payeuse = one note :
+ * la réceptionniste retrouve la cliente qui se présente au comptoir sans qu'elle soit éparpillée
+ * sur plusieurs praticiennes. `rendezVous` est trié par heure ; les annulés ne sont inclus que sur
+ * demande. `start` / `end` couvrent tout le passage de la cliente.
+ */
+export type ReservationDayRow = {
+  reservation: Reservation;
+  rendezVous: RendezVous[];
+  /** Earliest start among shown rendez-vous, "HH:mm" — the sort key. */
+  start: string;
+  /** Latest end among shown rendez-vous, "HH:mm". */
+  end: string;
+  /** Distinct praticiennes across active rendez-vous (primary + second). */
+  staffIds: string[];
+  /** True when every rendez-vous of the réservation is cancelled. */
+  allCancelled: boolean;
+};
+
+/**
+ * Group a day's réservations into sorted day rows. Default sort: start ascending, then payeuse id
+ * for a stable order at equal start (the caller re-sorts by name when it has the client list).
+ */
+export function groupDayByReservation(
+  reservations: Reservation[],
+  options: { includeCancelled?: boolean } = {},
+): ReservationDayRow[] {
+  const { includeCancelled = false } = options;
+  return reservations
+    .map((reservation) => {
+      const sorted = [...reservation.rendezVous].sort((a, b) => a.start.localeCompare(b.start));
+      const active = sorted.filter((rv) => rv.status !== "annule");
+      const shown = includeCancelled ? sorted : active;
+      const timing = active.length > 0 ? active : sorted;
+      const start = timing.reduce((min, rv) => (rv.start < min ? rv.start : min), timing[0]?.start ?? "00:00");
+      const end = timing.reduce((max, rv) => {
+        const e = appointmentEndTime(rv);
+        return e > max ? e : max;
+      }, "00:00");
+      const staffIds = [
+        ...new Set(active.flatMap((rv) => [rv.staffId, rv.secondStaffId].filter(Boolean) as string[])),
+      ];
+      return { reservation, rendezVous: shown, start, end, staffIds, allCancelled: active.length === 0 };
+    })
+    .filter((row) => row.rendezVous.length > 0 && (includeCancelled || !row.allCancelled))
+    .sort((a, b) => a.start.localeCompare(b.start) || a.reservation.payerClientId.localeCompare(b.reservation.payerClientId));
+}
+
+/**
+ * « 1 femme + 1 enfant » — la ligne de composition de l'Accueil (Figma 242:1735) : qui est
+ * physiquement du passage, comptée par personne distincte (pas par rendez-vous). Une prestation
+ * Mini&Co vaut toujours « enfant » ; sinon `beneficiaryKind` tranche pour un·e bénéficiaire en
+ * texte libre (un mari, un frère) ; une fiche connue ou l'absence de bénéficiaire (= la payeuse)
+ * valent toujours « femme ». Une payeuse qui ne reçoit elle-même aucune prestation (elle dépose ses
+ * enfants) n'apparaît pas dans le décompte.
+ */
+export function reservationComposition(reservation: Reservation): string {
+  const people = new Map<string, BeneficiaryKind>();
+  for (const rv of reservation.rendezVous) {
+    if (rv.status === "annule") continue;
+    const key = rv.beneficiaryClientId ?? rv.beneficiaryName ?? "__payer__";
+    if (people.has(key)) continue;
+    const service = serviceById(rv.serviceId);
+    const kind: BeneficiaryKind = service?.categoryId === "mini-co" ? "enfant" : (rv.beneficiaryKind ?? "femme");
+    people.set(key, kind);
+  }
+
+  const counts = { femme: 0, homme: 0, enfant: 0 };
+  for (const kind of people.values()) counts[kind] += 1;
+
+  const parts: string[] = [];
+  if (counts.femme > 0) parts.push(`${counts.femme} femme${counts.femme > 1 ? "s" : ""}`);
+  if (counts.homme > 0) parts.push(`${counts.homme} homme${counts.homme > 1 ? "s" : ""}`);
+  if (counts.enfant > 0) parts.push(`${counts.enfant} enfant${counts.enfant > 1 ? "s" : ""}`);
+  return parts.join(" + ") || "1 femme";
+}
+
+export function reservationById(reservations: Reservation[], id: string) {
+  return reservations.find((r) => r.id === id);
+}
+
+export function reservationForRendezVous(reservations: Reservation[], rvId: string) {
+  return reservations.find((r) => r.rendezVous.some((rv) => rv.id === rvId));
+}
+
+/** A rendez-vous's end time, "HH:mm" — start + durationMin. */
+export function appointmentEndTime(appointment: Pick<RendezVous, "start" | "durationMin">) {
+  return minutesToTime(timeToMinutes(appointment.start) + appointment.durationMin);
+}
+
+/** "09:00" -> "9h", "18:30" -> "18h30" — the short clock label used across the Planning. */
+export function formatHour(time: string) {
+  const [h, m] = time.split(":");
+  return m === "00" ? `${Number(h)}h` : `${Number(h)}h${m}`;
+}

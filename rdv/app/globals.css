@@ -1,0 +1,248 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Brand tokens — Beauty and Co */
+  --core-brand-color: #fdcfca;
+  --core-brand-color-2: #eddcda;
+  --on-core-brand-color: #2d2d2d;
+  --text-secondary: #344054;
+  --button-2-color: #a27576;
+  --brand-color-1: rgba(216, 184, 180, 0.5);
+
+  /* Brand neutrals — warm rose/taupe family reused across the booking flow.
+     #806562 was a near-duplicate drift of this same taupe; unified to one value. */
+  --brand-taupe-muted: #886666;
+  --brand-cream: #f8f6f9;
+  --brand-rose-soft: #fef0ee;
+  --brand-lilac: #e4c8ff;
+
+  /* Gray scale — neutral text/border/background values shared across components */
+  --color-gray-900: #101828;
+  --color-gray-800: #1d2939;
+  --color-gray-600: #475467;
+  --color-gray-500: #667085;
+  --color-gray-400: #98a2b3;
+  --color-gray-300: #d0d5dd;
+  --color-gray-200: #eaecf0;
+  --color-gray-100: #f2f4f7;
+  --color-gray-50: #f9fafb;
+
+  /* Misc reused colors */
+  --color-error: #b42318;
+  --color-text-tertiary: #374151;
+  --color-slate-500: #64748b;
+  --color-slate-200: #e2e8f0;
+  --color-slate-900: #0f172a;
+  --color-border-light: #e5e7eb;
+  --color-neutral-200: #e4e4e4;
+  --color-bg-subtle: #f7f8fa;
+  --color-ink: #020817;
+  --color-near-black: #303030;
+  --color-black: #000;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-cabinet-grotesk);
+  --font-heading: var(--font-prata);
+  --font-nav: var(--font-cabinet-grotesk);
+  --font-display: var(--font-benedict);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-cabinet-grotesk), Arial, Helvetica, sans-serif;
+  font-weight: 450;
+}
+
+/* Browsers paint autofilled inputs with their own blue/yellow tint that ignores
+   background-color — override it with the brand tint instead. The absurdly long
+   transition-delay is the standard trick to stop it flashing back on re-render. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px rgba(253, 207, 202, 0.15) inset;
+  -webkit-box-shadow: 0 0 0 1000px rgba(253, 207, 202, 0.15) inset;
+  -webkit-text-fill-color: #020817;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Gift-card hero visual (Figma "Property 1 = first/secondary" pair): sways between the two
+   poses every 800ms, freezes on the secondary pose and zooms 10% on hover. Each card's own
+   translate/rotate keyframes are the Figma pose's center offset (as % of *its own* box, since
+   that's what `translate()` percentages resolve against) converted from the original px, so the
+   same animation scales cleanly between the mobile and desktop card sizes.
+   The hover trigger lives on the whole section (see useGiftCardHover), not just this element, so
+   the zoom itself is set inline by that hook rather than through a `:hover` rule here — this just
+   supplies the transition so that inline change animates smoothly. */
+.gift-card-visual {
+  transition: transform 0.3s ease-out;
+}
+
+.gift-card-layer {
+  position: absolute;
+  inset: 0;
+}
+
+.gift-card-face {
+  position: relative;
+  width: 86.05%;
+  aspect-ratio: 327.004 / 211.591;
+  border-radius: 8.87%;
+  overflow: hidden;
+}
+.gift-card-face--front {
+  box-shadow: 0px 0px 20px 0px rgba(0, 0, 0, 0.15);
+  animation: gift-card-sway-front 4.8s ease-in-out infinite;
+}
+.gift-card-face--back {
+  animation: gift-card-sway-back 4.8s ease-in-out infinite;
+}
+
+@keyframes gift-card-sway-back {
+  0%,
+  100% {
+    transform: translate(-2.36%, 6.01%) rotate(-2.1deg);
+  }
+  50% {
+    transform: translate(-3.87%, -7.14%) rotate(-8.15deg);
+  }
+}
+@keyframes gift-card-sway-front {
+  0%,
+  100% {
+    transform: translate(1.46%, 14.46%) rotate(0.07deg);
+  }
+  50% {
+    transform: translate(2.48%, 7.43%) rotate(-2.41deg);
+  }
+}
+
+/* Draws the eye to a booking block the visitor hasn't interacted with yet (note field,
+   two-practitioners toggle, suggestion upsell). The shake is parked at the tail of a longer
+   cycle (rather than looping continuously) so it reads as an occasional nudge instead of a
+   constant distraction. */
+.attention-shake {
+  animation: attention-shake-wiggle 3s ease-in-out infinite;
+  transform-origin: center;
+}
+
+@keyframes attention-shake-wiggle {
+  0%,
+  80%,
+  100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  83% {
+    transform: rotate(-3deg) translateX(-6px);
+  }
+  86% {
+    transform: rotate(3deg) translateX(6px);
+  }
+  89% {
+    transform: rotate(-2.5deg) translateX(-5px);
+  }
+  92% {
+    transform: rotate(2.5deg) translateX(5px);
+  }
+  95% {
+    transform: rotate(-1deg) translateX(-2px);
+  }
+  97% {
+    transform: rotate(1deg) translateX(2px);
+  }
+}
+
+/* Same full amplitude as .attention-shake, but plays once on mount instead of looping —
+   for blocks that appear as the direct result of an action (e.g. picking a time slot),
+   where a repeating shake would be redundant with the moment already drawing the eye. */
+.attention-shake-once {
+  animation: attention-shake-wiggle-once 0.6s ease-in-out 1;
+  transform-origin: center;
+}
+
+@keyframes attention-shake-wiggle-once {
+  0%,
+  100% {
+    transform: rotate(0deg) translateX(0);
+  }
+  15% {
+    transform: rotate(-3deg) translateX(-6px);
+  }
+  30% {
+    transform: rotate(3deg) translateX(6px);
+  }
+  45% {
+    transform: rotate(-2.5deg) translateX(-5px);
+  }
+  60% {
+    transform: rotate(2.5deg) translateX(5px);
+  }
+  75% {
+    transform: rotate(-1deg) translateX(-2px);
+  }
+  90% {
+    transform: rotate(1deg) translateX(2px);
+  }
+}
+
+/* Services and Coordonnées steps: switching person deals them like cards on a table. The current
+   one is swept off-screen with a flat tilt while the next one lands from the other side, slightly
+   tilted, and straightens out. Forward (next person) sweeps left; going back mirrors it. The
+   pivot sits low on the card, like a finger flicking it; `--person-sweep-origin` moves it up for
+   tall content (Services) so the visible part keeps the same feel. Reduced motion swaps instantly. */
+@keyframes person-sweep-in-from-right {
+  from { opacity: 0; transform: translateX(72px) rotate(5deg); }
+  to { opacity: 1; transform: translateX(0) rotate(0); }
+}
+@keyframes person-sweep-in-from-left {
+  from { opacity: 0; transform: translateX(-72px) rotate(-5deg); }
+  to { opacity: 1; transform: translateX(0) rotate(0); }
+}
+@keyframes person-sweep-out-to-left {
+  0% { opacity: 1; transform: translateX(0) rotate(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(-130%) rotate(-16deg); }
+}
+@keyframes person-sweep-out-to-right {
+  0% { opacity: 1; transform: translateX(0) rotate(0); }
+  70% { opacity: 1; }
+  100% { opacity: 0; transform: translateX(130%) rotate(16deg); }
+}
+.person-enter-forward,
+.person-enter-back,
+.person-leave-forward,
+.person-leave-back {
+  transform-origin: var(--person-sweep-origin, 50% 85%);
+}
+.person-enter-forward { animation: person-sweep-in-from-right 440ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }
+.person-enter-back { animation: person-sweep-in-from-left 440ms cubic-bezier(0.22, 1, 0.36, 1) 160ms both; }
+.person-leave-forward { animation: person-sweep-out-to-left 420ms cubic-bezier(0.55, 0, 0.75, 0.2) both; }
+.person-leave-back { animation: person-sweep-out-to-right 420ms cubic-bezier(0.55, 0, 0.75, 0.2) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .person-enter-forward,
+  .person-enter-back {
+    animation: none;
+  }
+  .person-leave-forward,
+  .person-leave-back {
+    display: none;
+  }
+}
+
+/* /abonnement — pastille « Voir les packs » : onde qui irradie en continu derrière la pastille. */
+@keyframes packs-ping {
+  0% { transform: scale(1); opacity: 0.7; }
+  80%, 100% { transform: scale(1.6); opacity: 0; }
+}
+.packs-ping { animation: packs-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .packs-ping { animation: none; }
+}

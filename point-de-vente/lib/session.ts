@@ -1,0 +1,157 @@
+"use client";
+
+import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { UTILISATEUR, type Utilisateur } from "@/lib/data/utilisateurs";
+import { salonById } from "@/lib/data/entreprises";
+import type { Salon } from "@/lib/data/types";
+
+/**
+ * Session du poste — le compte unique (mot de passe + photo) et l'état connecté/verrouillé.
+ * Entièrement simulée : la valeur vit dans `sessionStorage` (par onglet, effacée à la fermeture),
+ * aucune authentification réelle, aucun backend. Un seul compte, aucune bascule (voir ADR 0026).
+ */
+
+const AUTH_KEY = "pdv.session.authenticated";
+const PASSWORD_KEY = "pdv.session.password";
+const PHOTO_KEY = "pdv.session.photoUrl";
+const VILLE_KEY = "pdv.session.ville";
+
+/** Villes où Beauty and Co ouvre une session — choisie à la connexion. */
+export const VILLES = [
+  { value: "dakar", label: "Dakar" },
+  { value: "abidjan", label: "Abidjan" },
+] as const;
+export type Ville = (typeof VILLES)[number]["value"];
+const DEFAULT_VILLE: Ville = "dakar";
+
+function isVille(value: string | null): value is Ville {
+  return VILLES.some((v) => v.value === value);
+}
+
+type Snapshot = { authenticated: boolean; password: string; photoUrl: string | null; ville: Ville };
+
+let cache: Snapshot | null = null;
+const listeners = new Set<() => void>();
+const SERVER_SNAPSHOT: Snapshot = {
+  authenticated: true,
+  password: UTILISATEUR.password,
+  photoUrl: null,
+  ville: DEFAULT_VILLE,
+};
+
+function compute(): Snapshot {
+  let authenticated = true;
+  let password = UTILISATEUR.password;
+  let photoUrl: string | null = null;
+  let ville: Ville = DEFAULT_VILLE;
+  try {
+    const storedAuth = sessionStorage.getItem(AUTH_KEY);
+    if (storedAuth !== null) authenticated = storedAuth === "1";
+    password = sessionStorage.getItem(PASSWORD_KEY) ?? UTILISATEUR.password;
+    photoUrl = sessionStorage.getItem(PHOTO_KEY);
+    const storedVille = sessionStorage.getItem(VILLE_KEY);
+    if (isVille(storedVille)) ville = storedVille;
+  } catch {
+    /* sessionStorage indisponible — valeurs par défaut */
+  }
+  return { authenticated, password, photoUrl, ville };
+}
+
+function getSnapshot(): Snapshot {
+  if (!cache) cache = compute();
+  return cache;
+}
+
+function getServerSnapshot(): Snapshot {
+  return SERVER_SNAPSHOT;
+}
+
+function subscribe(cb: () => void) {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
+}
+
+function emit() {
+  cache = compute();
+  for (const l of listeners) l();
+}
+
+function writeAuthenticated(value: boolean, ville?: Ville) {
+  try {
+    sessionStorage.setItem(AUTH_KEY, value ? "1" : "0");
+    if (ville) sessionStorage.setItem(VILLE_KEY, ville);
+  } catch {
+    /* ignore */
+  }
+  emit();
+}
+
+function writePassword(password: string) {
+  try {
+    sessionStorage.setItem(PASSWORD_KEY, password);
+  } catch {
+    /* ignore */
+  }
+  emit();
+}
+
+function writePhotoUrl(photoUrl: string | null) {
+  try {
+    if (photoUrl) sessionStorage.setItem(PHOTO_KEY, photoUrl);
+    else sessionStorage.removeItem(PHOTO_KEY);
+  } catch {
+    /* ignore */
+  }
+  emit();
+}
+
+/** Salon où se trouve le poste. Le salon appartient au poste, pas à la personne : l'équipe
+ *  tourne d'un salon à l'autre. Simulé, fixe. Salon sélectionné par défaut sur toutes les pages. */
+export const POSTE_SALON_ID = "almadies";
+
+export type Session = {
+  currentUser: Utilisateur;
+  /** Salon du poste (voir `POSTE_SALON_ID`). */
+  salon: Salon | undefined;
+  photoUrl: string | null;
+  authenticated: boolean;
+  /** Ville choisie à la connexion (Dakar par défaut). */
+  ville: Ville;
+  /** Vrai si `password` correspond au mot de passe courant (valeur de session si changé, sinon défaut). */
+  verifyPassword: (password: string) => boolean;
+  /** Enregistre un nouveau mot de passe (simulé, en session). */
+  setPassword: (password: string) => void;
+  setPhotoUrl: (photoUrl: string | null) => void;
+  /** Verrouille le poste — affiche l'écran de verrouillage jusqu'à réauthentification. */
+  logout: () => void;
+  /** Déverrouille le poste dans la ville choisie — démo : n'importe quelle adresse e-mail et mot de passe conviennent. */
+  login: (ville: Ville) => void;
+};
+
+export function useSession(): Session {
+  const snap = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+
+  const verifyPassword = useCallback((password: string) => snap.password === password, [snap.password]);
+  const setPassword = useCallback((password: string) => writePassword(password), []);
+  const setPhotoUrl = useCallback((photoUrl: string | null) => writePhotoUrl(photoUrl), []);
+  const logout = useCallback(() => writeAuthenticated(false), []);
+  const login = useCallback((ville: Ville) => writeAuthenticated(true, ville), []);
+
+  return useMemo(
+    () => ({
+      currentUser: UTILISATEUR,
+      salon: salonById(POSTE_SALON_ID),
+      photoUrl: snap.photoUrl,
+      authenticated: snap.authenticated,
+      ville: snap.ville,
+      verifyPassword,
+      setPassword,
+      setPhotoUrl,
+      logout,
+      login,
+    }),
+    [snap.photoUrl, snap.authenticated, snap.ville, verifyPassword, setPassword, setPhotoUrl, logout, login],
+  );
+}

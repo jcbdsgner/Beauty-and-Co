@@ -1,0 +1,49 @@
+---
+status: accepted — remplace ADR 0032
+---
+
+# Créer / modifier un rendez-vous : la fenêtre unique du back-office
+
+## Contexte
+
+Demande du 02/10 : « pour modifier un rdv, ça doit être exactement le même modal que celui du
+back-office ; pour créer un rdv, exactement le même système avec juste en plus la possibilité de
+choisir la cliente en haut ». Le back-office venait de fondre « Nouveau rendez-vous » et
+« Reprogrammer le rendez-vous » en une seule fenêtre (`rendezvous/RdvDialog`).
+
+## Décision
+
+- Le parcours b&co recopié (ADR 0032 : grand cadre mis à l'échelle, étapes Clientes → Prestations
+  → Créneau → Confirmation, acompte, packs) est **retiré**. `components/prise-rdv/` et les données
+  du site sont supprimés ; seul `lib/prise-rdv/planifier.ts` reste.
+- `components/planning/rdv-dialog.tsx` recopie la fenêtre du back-office, texte et mise en page
+  compris : date, salon (adresse, ouverture du jour), horaires réellement libres en Matin /
+  Après-midi / Soir, prestations repliables par personne (onglets, « Ajouter une personne »,
+  recherche, liste à cocher). Création = la même fenêtre + **Cliente** en tête (recherche nom /
+  téléphone / n°, « Créer une fiche » → `NewClientDialog`).
+- Praticiennes posées d'office (`planAt`) ; à la reprogrammation l'actuelle — et la 2ᵉ d'une
+  prestation « à deux » — est gardée si elle reste libre. Prestation retirée ⇒ rendez-vous annulé
+  (`saveParcoursReservation`, inchangé).
+- **Rév. 05/10 — fenêtre large en deux colonnes, vues d'un coup** (création et modification,
+  même fenêtre, pas d'étapes). À gauche le rendez-vous : cliente (création), prestations par
+  personne, salon et date sur une rangée, horaire. À droite ce qui l'accompagne : **2 praticiennes**,
+  questions de catégorie, **extensions** (cheveux Beccy Wave / Nefertiti, seulement quand une
+  personne en coiffure répond « Non » à « propres extensions » — règle du site b&co), **boissons**
+  du Bar, notes. Pied pleine largeur : créneau, durée, total (extras compris), bouton.
+- **« 2 praticiennes » = un seul interrupteur, appliqué là où c'est faisable** : sur les
+  prestations réalisables à 2 (`twoPractitionersEligible`, 76/106, verbatim b&co), quand deux
+  praticiennes du métier sont libres ensemble — sinon la prestation reste à une seule, durée
+  pleine. Une préférence, jamais une contrainte : l'option ne retire aucun horaire (`planAt`).
+  Une fois l'horaire choisi, la fenêtre dit ce qui passe à deux et ce qui reste à une
+  (« Reste à 1 : une seule praticienne libre à 15:00 »). À la modification, allumé si la
+  réservation a déjà une prestation à deux ; une ligne qui passe à deux garde sa praticienne.
+  Le Menu de la fenêtre marque les éligibles « à 2 ».
+- Head spa, soins visage, épilation, spa : Almadies seulement (`serviceOfferedAt`), dit en clair.
+
+## Conséquences
+
+Plus d'acompte ni de packs saisis à la prise de rendez-vous au comptoir ; ce qu'une réservation
+porte déjà (acompte, note de la cliente) est conservé à la modification. Depuis la rév. du 05/10,
+les questions de catégorie, les extensions, les boissons et une note de l'accueil se saisissent
+dans la colonne de droite. Pas d'incompatibilités entre prestations : le Menu du point de vente
+n'en décrit pas.

@@ -1,0 +1,321 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   daisyUI 5 — the component base for the whole app. Single custom theme
+   ("beautyco"), one primary colour (#886666, the taupe carried over from the
+   Beauty and Co brand). Status hues are kept: success green, error red, and the
+   amber that marks "à traiter / maintenant". Desktop-only counter station — no
+   dark theme (constant indoor light).
+   ───────────────────────────────────────────────────────────────────────────── */
+@plugin "daisyui" {
+  themes: false;
+  logs: false;
+}
+
+@plugin "daisyui/theme" {
+  name: "beautyco";
+  default: true;
+  prefersdark: false;
+  color-scheme: light;
+
+  /* Surfaces / ink */
+  --color-base-100: #ffffff;
+  --color-base-200: #f9f9f9;
+  --color-base-300: #e6dedd;
+  --color-base-content: #241f1d;
+
+  /* The one brand colour, in every accent role */
+  --color-primary: #886666;
+  --color-primary-content: #ffffff;
+  --color-secondary: #5c4444;
+  --color-secondary-content: #ffffff;
+  --color-accent: #f3eeee;
+  --color-accent-content: #5c4444;
+  /* dark chrome (toasts, tooltips, the one dark CTA) stays in the warm taupe family —
+     no cold near-black, no second hue. */
+  --color-neutral: #3a2d2d;
+  --color-neutral-content: #f9f9f9;
+
+  /* Status — meaning stays conventional, amber = the single "needs you" signal */
+  --color-info: #2662d9;
+  --color-info-content: #ffffff;
+  --color-success: #12805c;
+  --color-success-content: #ffffff;
+  --color-warning: #b5590a;
+  --color-warning-content: #ffffff;
+  --color-error: #b42318;
+  --color-error-content: #ffffff;
+
+  /* Shape — one light radius family, never pill-round (2026-09-27) : controls (buttons,
+     fields, toggles, chips) share the button's 8px; surfaces (cards, dialogs, popovers)
+     12px; small badges 6px (rounded-sm). rounded-full is for true circles only. */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+
+  /* Touch-first counter: every field/button is a large tap target.
+     btn/input height = --size-field × 10 → 0.35rem × 10 = 56px. */
+  --size-selector: 0.28125rem;
+  --size-field: 0.35rem;
+
+  --border: 1px;
+  --depth: 1;
+  --noise: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Compatibility tokens — legacy Beauty and Co / « Le Tableau » variables still
+   referenced by not-yet-migrated screens, remapped onto the daisyUI palette so
+   nothing renders broken before its page pass. Semantic values are kept
+   identical to the theme block above.
+   ───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --background: #f9f9f9;
+  --foreground: #241f1d;
+
+  --core-brand-color: #886666;
+  --core-brand-color-2: #eddcda;
+  --on-core-brand-color: #ffffff;
+  --text-secondary: #475467;
+  --button-2-color: #886666;
+  --brand-color-1: rgba(136, 102, 102, 0.45);
+
+  --brand-taupe-muted: #886666;
+  --brand-cream: #f9f9f9;
+  --brand-rose-soft: #f3eeee;
+  --brand-lilac: #e4c8ff;
+
+  --pos-accent-dark: #886666;
+  --pos-accent-dark-soft: rgba(136, 102, 102, 0.12);
+  --pos-accent: #886666;
+  --pos-accent-on: #ffffff;
+  /* Paliers de fidélité — dégradé métallique (from → via → to) + encre du libellé. Contraste
+     vérifié sur chaque stop, pire cas ≥ 5:1 : silver 8,1 · gold 6,2 · platinum 5,2 · vip 5,0. L'or reste jaune (teinte 44–48°)
+     pour ne pas se confondre avec l'ambre signal (28°). */
+  --pos-tier-silver-from: #f4f5f7;
+  --pos-tier-silver-via: #dfe2e7;
+  --pos-tier-silver-to: #b9bfc8;
+  --pos-tier-silver-ink: #1f2733;
+  --pos-tier-gold-from: #faeaa8;
+  --pos-tier-gold-via: #e9c85a;
+  --pos-tier-gold-to: #cfa634;
+  --pos-tier-gold-ink: #382800;
+  --pos-tier-platinum-from: #646d7b;
+  --pos-tier-platinum-via: #4a515d;
+  --pos-tier-platinum-to: #2c313a;
+  --pos-tier-platinum-ink: #ffffff;
+  --pos-tier-vip-from: #f1e0ff;
+  --pos-tier-vip-via: #d3a9fa;
+  --pos-tier-vip-to: #a874e0;
+  --pos-tier-vip-ink: #2a0b47;
+  --pos-tier-silver: linear-gradient(135deg, var(--pos-tier-silver-from), var(--pos-tier-silver-via) 55%, var(--pos-tier-silver-to));
+  --pos-tier-gold: linear-gradient(135deg, var(--pos-tier-gold-from), var(--pos-tier-gold-via) 55%, var(--pos-tier-gold-to));
+  --pos-tier-platinum: linear-gradient(135deg, var(--pos-tier-platinum-from), var(--pos-tier-platinum-via) 55%, var(--pos-tier-platinum-to));
+  --pos-tier-vip: linear-gradient(135deg, var(--pos-tier-vip-from), var(--pos-tier-vip-via) 55%, var(--pos-tier-vip-to));
+
+  /* Fulfillment type (cartes cadeaux) — Figma 268:1675 (Accueil) codes "Livraison" as a soft
+     coral tag with dark ink, not a coloured foreground; superseded the magenta from the older
+     255:2 reference. Same category-colour role, distinct from the amber "à traiter" signal. */
+  --pos-fulfillment-livraison: #fdcfca;
+  --pos-fulfillment-livraison-soft: #fdcfca;
+
+  --color-success: #12805c;
+  --color-success-soft: #e3f5ee;
+  --color-warning: #b5590a;
+  --color-warning-soft: #fdf0e3;
+  --color-info: #2662d9;
+  --color-info-soft: #e8f0fd;
+  --color-error: #b42318;
+  --color-error-soft: #fdece9;
+
+  --color-gray-900: #101828;
+  --color-gray-800: #1d2939;
+  --color-gray-700: #344054;
+  --color-gray-600: #475467;
+  --color-gray-500: #667085;
+  --color-gray-400: #98a2b3;
+  --color-gray-300: #d0d5dd;
+  --color-gray-200: #eaecf0;
+  --color-gray-100: #f2f4f7;
+  --color-gray-50: #f9fafb;
+
+  /* « Le Tableau » chrome kept alive for Planning / Fiche / sheets until their pass */
+  --board-slate: #3a2d2d;
+  --board-slate-line: #574545;
+  --board-groove: #e6dedd;
+  --board-amber: #b5590a;
+  --board-amber-soft: #fdf0e3;
+  --board-rose-plaque: #f3eeee;
+  --board-taupe-plaque: rgba(136, 102, 102, 0.09);
+  --board-lane-h: 3.5rem;
+
+  /* Calendrier Accueil — un seul fond rosé pour tous les blocs, sans contour (ADR 0033,
+     remplace la palette multicolore de l'ADR 0022). */
+  --cal-card: #fff1f1;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Utility aliases the component layer relies on (shadcn-style names that daisyUI
+   does not define: card / popover / muted / destructive / border / ring /
+   *-foreground). Mapped onto the theme, never new colours.
+   ───────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --font-sans: var(--font-poppins);
+  --font-heading: var(--font-poppins);
+  --font-nav: var(--font-poppins);
+
+  /* Type floor: a counter screen read at arm's length — nothing smaller than 13px.
+     Tailwind's default text-xs (12px) is raised here, and sub-12px arbitrary sizes
+     are banned in components (use text-xs). */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.125rem;
+
+  --color-card: #ffffff;
+  --color-card-foreground: var(--foreground);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--foreground);
+  --color-primary-foreground: #ffffff;
+  --color-secondary-foreground: #ffffff;
+  --color-muted: #efe9e8;
+  --color-muted-foreground: #7a706b;
+  --color-accent-foreground: #5c4444;
+  --color-destructive: #b42318;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #e6dedd;
+  --color-input: #e6dedd;
+  --color-ring: #886666;
+
+  --radius-sm: 0.375rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
+  --radius-card: 0.75rem;
+
+  /* Touch-first counter station: primary controls are XL tap targets. */
+  --spacing-tap: 3.5rem;   /* 56px */
+  --spacing-tap-lg: 3.75rem; /* 60px */
+}
+
+body {
+  background: var(--color-base-200);
+  color: var(--color-base-content);
+  font-family: var(--font-poppins), Arial, Helvetica, sans-serif;
+  font-weight: 400;
+}
+
+/* Focus ring — a selected/focused field is outlined in the soft coral #fdcfca, not daisyUI's
+   default near-black (--color-base-content). Unlayered, so it wins over daisyUI's @layer rule
+   regardless of source order. */
+.input:focus,
+.input:focus-within,
+.select:focus,
+.select:focus-within,
+.select:open,
+.textarea:focus,
+.textarea:focus-within {
+  --input-color: #fdcfca;
+}
+
+/* Radix Accordion's content height is read from its own custom property — see
+   components/ui/molecules/accordion.tsx. */
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+/* Comptoir — the running total gives a quick scale-pulse each time it recomputes, so a
+   prestation landing in the ticket is felt, not just seen. */
+@keyframes total-pulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+.animate-total-pulse { animation: total-pulse 220ms ease-out; }
+
+/* A cart line arrives from the catalogue side. */
+@keyframes line-in {
+  from { opacity: 0; transform: translateX(12px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-line-in { animation: line-in 200ms ease-out; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-total-pulse, .animate-line-in { animation: none; }
+}
+
+/* « Le Tableau » motion — kept for Planning / Fiche until their pass. */
+@keyframes chip-flip {
+  0% { transform: perspective(200px) rotateX(0deg); }
+  50% { transform: perspective(200px) rotateX(-90deg); }
+  100% { transform: perspective(200px) rotateX(0deg); }
+}
+.animate-chip-flip { animation: chip-flip 220ms ease-in-out; }
+
+@keyframes lane-pulse {
+  0% { background-color: var(--board-amber-soft); }
+  100% { background-color: transparent; }
+}
+.animate-lane-pulse { animation: lane-pulse 900ms ease-out; }
+
+@keyframes lane-fill {
+  from { opacity: 0; transform: translateX(6px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-lane-fill { animation: lane-fill 180ms ease-out both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-chip-flip, .animate-lane-pulse, .animate-lane-fill { animation: none; }
+}
+
+/* Le bloc qui se fait remarquer une fois — repris du site b&co (`attention-shake-once`, même
+   amplitude) : il apparaît comme le résultat direct d'une action, un seul tremblement suffit. */
+@keyframes attention-shake-wiggle-once {
+  0%, 100% { transform: rotate(0deg) translateX(0); }
+  15% { transform: rotate(-3deg) translateX(-6px); }
+  30% { transform: rotate(3deg) translateX(6px); }
+  45% { transform: rotate(-2.5deg) translateX(-5px); }
+  60% { transform: rotate(2.5deg) translateX(5px); }
+  75% { transform: rotate(-1deg) translateX(-2px); }
+  90% { transform: rotate(1deg) translateX(2px); }
+}
+.attention-shake-once { animation: attention-shake-wiggle-once 0.6s ease-in-out 1; transform-origin: center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .attention-shake-once { animation: none; }
+}
+
+/* Browsers paint autofilled inputs with their own blue/yellow tint that ignores
+   background-color — override it with the brand tint instead. The absurdly long
+   transition-delay is the standard trick to stop it flashing back on re-render. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  box-shadow: 0 0 0 1000px rgba(136, 102, 102, 0.1) inset;
+  -webkit-box-shadow: 0 0 0 1000px rgba(136, 102, 102, 0.1) inset;
+  -webkit-text-fill-color: #241f1d;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Mise en évidence — bord primary + halo rosé (recette du bouton « Scanner le code cadeau »,
+   25/09). À utiliser partout où l'on veut faire ressortir un élément, plutôt que le signal ambré. */
+@utility highlight-rose {
+  border-color: var(--color-primary);
+  box-shadow: 0 4px 17.5px rgb(253 207 202 / 0.65);
+}

@@ -1,0 +1,271 @@
+import type { Produit, ProductCategory, Service, ServiceCategory } from "@/lib/data/types";
+
+/**
+ * The Menu — the prestations and produits a receptionist can put in a panier and encaisser.
+ * Édité hors de cette app : the prestation list mirrors, verbatim (ids, libellés, prix, durées,
+ * éligibilité « à 2 »), the shared Beauty and Co booking catalogue (`b&co/lib/data/booking-services.ts`).
+ * point-de-vente ne fait que la lire. Seule divergence de structure : Mini&Co est ici UNE catégorie
+ * à deux sous-catégories (Hair, Spa) là où b&co la scinde en deux catégories de réservation.
+ */
+
+export const SERVICE_CATEGORIES: ServiceCategory[] = [
+  { id: "coiffure", name: "Coiffure" },
+  { id: "manucure-pedicure", name: "Manucure / Pédicure" },
+  { id: "onglerie", name: "Onglerie" },
+  { id: "spa", name: "Spa & Massages" },
+  { id: "soin-du-visage", name: "Soins Visage" },
+  { id: "epilation", name: "Épilation" },
+  { id: "mini-co", name: "Mini&Co" },
+];
+
+export const SERVICES: Service[] = [
+
+  // COIFFURE
+  { id: "coiffure-defrisage-professionnel-beauty-and-co-texlax", categoryId: "coiffure", subcategory: "Défrisage", name: "DEFRISAGE PROFESSIONNEL BEAUTY AND CO / TEXLAX", price: 49000, durationMinutes: 150, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-hybrid-extensions", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "HYBRID EXTENSIONS", price: 99000, durationMinutes: 190, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-extensions-tapes-2-paquets-de-cheveux-soit-100-g-18-pouces-coiffage", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "EXTENSIONS TAPES (2 paquets de cheveux soit 100 g 18 pouces + coiffage)", price: 249000, durationMinutes: 150, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-enlever-anneaux", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "ENLEVER ANNEAUX", price: 7000, durationMinutes: 40, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-pose-perruque", categoryId: "coiffure", subcategory: "Perruques", name: "POSE PERRUQUE", price: 39000, durationMinutes: 70, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-soin-perruque", categoryId: "coiffure", subcategory: "Perruques", name: "SOIN PERRUQUE", price: 22000, durationMinutes: 120, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-supplement-lisseur", categoryId: "coiffure", subcategory: "Brushing", name: "SUPPLEMENT LISSEUR", price: 5000, durationMinutes: 20, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-soin-keratine", categoryId: "coiffure", subcategory: "Lissage", name: "SOIN KÉRATINE", price: 189000, durationMinutes: 210, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-supplement-coupe-pointes", categoryId: "coiffure", subcategory: "Coupe", name: "SUPPLEMENT COUPE POINTES", price: 9000, durationMinutes: 25, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-coupe-transformation", categoryId: "coiffure", subcategory: "Coupe", name: "COUPE TRANSFORMATION", price: 36000, durationMinutes: 40, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-tresses-cheveux", categoryId: "coiffure", subcategory: "Tresses", name: "TRESSES CHEVEUX +", price: 19000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-shampoing-brushing-sur-extensions-tissages-shampoing-inclus-et-obligatoire", categoryId: "coiffure", subcategory: "Brushing", name: "SHAMPOING BRUSHING SUR EXTENSIONS / TISSAGES (SHAMPOING INCLUS ET OBLIGATOIRE)", price: 31000, durationMinutes: 100, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-croisiere", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SOIN CROISIÈRE", price: 36000, durationMinutes: 90, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-extension-aux-fils-2-paquets", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "EXTENSION AUX FILS 2 PAQUETS", price: 218000, durationMinutes: 240, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-botox-lissant", categoryId: "coiffure", subcategory: "Lissage", name: "SOIN BOTOX LISSANT", price: 99000, durationMinutes: 190, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-tissage-ouvert", categoryId: "coiffure", subcategory: "Tissage", name: "TISSAGE OUVERT", price: 46000, durationMinutes: 140, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-tissage-rajout", categoryId: "coiffure", subcategory: "Tissage", name: "TISSAGE RAJOUT", price: 39000, durationMinutes: 75, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-half-up-half-down", categoryId: "coiffure", subcategory: "Coiffure", name: "HALF UP HALF DOWN", price: 49000, durationMinutes: 120, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-shampoing-brushing-shampoing-inclus-et-obligatoire", categoryId: "coiffure", subcategory: "Brushing", name: "SHAMPOING BRUSHING (SHAMPOING INCLUS ET OBLIGATOIRE)", price: 23000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-extensions-aux-fils-1-paquet", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "EXTENSIONS AUX FILS 1 PAQUET", price: 129000, durationMinutes: 240, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-head-spa-ultimate-deep-relaxation", categoryId: "coiffure", subcategory: "Head Spa", name: "HEAD SPA ULTIMATE DEEP RELAXATION", price: 179000, durationMinutes: 240, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-extensions-tapes-3-paquets-de-cheveux-soit-150g-18-pouces-coiffage", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "EXTENSIONS TAPES (3 PAQUETS DE CHEVEUX SOIT 150G 18 POUCES + COIFFAGE)", price: 349000, durationMinutes: 180, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-defrisage-professionnel-soin-fortifiant-anti-casse", categoryId: "coiffure", subcategory: "Défrisage", name: "DEFRISAGE PROFESSIONNEL + SOIN FORTIFIANT ANTI CASSE", price: 59000, durationMinutes: 150, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-complet", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SOIN COMPLET", price: 46000, durationMinutes: 130, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-detox", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SOIN DETOX", price: 46000, durationMinutes: 140, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-botox-reparateur-non-lissant", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SOIN BOTOX REPARATEUR(NON LISSANT)", price: 86000, durationMinutes: 150, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-lissant-tanin", categoryId: "coiffure", subcategory: "Lissage", name: "SOIN LISSANT TANIN", price: 189000, durationMinutes: 190, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-silk-press", categoryId: "coiffure", subcategory: "Brushing", name: "SILK PRESS", price: 79000, durationMinutes: 180, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-extensions-anneaux-haute-couture-2-paquets", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "EXTENSIONS ANNEAUX HAUTE COUTURE 2 PAQUETS", price: 80000, durationMinutes: 170, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-pose-clips", categoryId: "coiffure", subcategory: "Luxury Extensions", name: "POSE CLIPS", price: 37000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-ponytail", categoryId: "coiffure", subcategory: "Coiffure", name: "PONYTAIL", price: 41000, durationMinutes: 90, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-supplement-hand-feet-massage-massage-pieds-mains", categoryId: "coiffure", subcategory: "Head Spa", name: "SUPPLÉMENT HAND FEET MASSAGE/ MASSAGE PIEDS-MAINS", price: 19000, durationMinutes: 15, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-croisiere-head-spa", categoryId: "coiffure", subcategory: "Head Spa", name: "SOIN CROISIERE HEAD SPA", price: 84000, durationMinutes: 120, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-pose-u-part-wig", categoryId: "coiffure", subcategory: "Perruques", name: "POSE U-PART WIG", price: 37000, durationMinutes: 70, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-tissage-versatile", categoryId: "coiffure", subcategory: "Tissage", name: "TISSAGE VERSATILE", price: 56000, durationMinutes: 120, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-shampoing-sechage", categoryId: "coiffure", subcategory: "Brushing", name: "SHAMPOING SÉCHAGE", price: 17000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-flip-over-sew-in-tissage-ferme", categoryId: "coiffure", subcategory: "Tissage", name: "FLIP OVER SEW IN (TISSAGE FERMÉ)", price: 59000, durationMinutes: 150, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-tissage-closure-behind-the-hair-line-new", categoryId: "coiffure", subcategory: "Tissage", name: "TISSAGE CLOSURE BEHIND THE HAIR LINE (NEW)", price: 74900, durationMinutes: 190, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-supplement-express-floral-facial-soin-du-visage-relaxant", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SUPPLÉMENT EXPRESS FLORAL FACIAL/ SOIN DU VISAGE RELAXANT", price: 34000, durationMinutes: 35, twoPractitionersEligible: false, active: true },
+  { id: "coiffure-soin-vip", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SOIN VIP", price: 49000, durationMinutes: 160, twoPractitionersEligible: true, active: true },
+  { id: "coiffure-soin-reparateur-olapex-new-in", categoryId: "coiffure", subcategory: "Nos Rituels Soins", name: "SOIN RÉPARATEUR OLAPEX (NEW IN)", price: 69000, durationMinutes: 120, twoPractitionersEligible: true, active: true },
+
+  // MANUCURE PEDICURE
+  { id: "manucure-pedicure-gel-sur-ongle-naturel-gainage", categoryId: "manucure-pedicure", name: "GEL SUR ONGLE NATUREL(GAINAGE)", price: 33000, durationMinutes: 70, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-supplement-decoration-chrome-cat-eye-baby-boomer", categoryId: "manucure-pedicure", name: "SUPPLÉMENT DÉCORATION (Chrome, Cat Eye, Baby Boomer)", price: 7500, durationMinutes: 20, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-manucure-permanent", categoryId: "manucure-pedicure", name: "MANUCURE + PERMANENT", price: 32000, durationMinutes: 80, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-jelly-pedicure", categoryId: "manucure-pedicure", name: "JELLY PÉDICURE", price: 29000, durationMinutes: 65, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-smooth-pedicure", categoryId: "manucure-pedicure", name: "SMOOTH PÉDICURE", price: 36000, durationMinutes: 80, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-perfect-manucure-russe-gel-sur-ongles-naturels-gainage", categoryId: "manucure-pedicure", name: "PERFECT MANUCURE RUSSE+ GEL SUR ONGLES NATURELS (GAINAGE)", price: 43000, durationMinutes: 90, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-manucure-russe-sans-vernis-sans-gel", categoryId: "manucure-pedicure", name: "MANUCURE RUSSE(sans vernis/sans gel)", price: 13000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-vernis-simple-mains-classique-et-halal", categoryId: "manucure-pedicure", name: "VERNIS SIMPLE MAINS (CLASSIQUE ET HALAL)", price: 9000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-pedicure-me-spa", categoryId: "manucure-pedicure", name: "PÉDICURE ME SPA", price: 26000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-manucure-spa-express", categoryId: "manucure-pedicure", name: "MANUCURE SPA EXPRESS", price: 16000, durationMinutes: 45, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-pedicure-permanent", categoryId: "manucure-pedicure", name: "PÉDICURE PERMANENT", price: 36000, durationMinutes: 80, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-perfect-pedicure-russe-permanent", categoryId: "manucure-pedicure", name: "PERFECT PÉDICURE RUSSE + PERMANENT", price: 39000, durationMinutes: 80, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-luxury-perfect-pedicure", categoryId: "manucure-pedicure", name: "LUXURY PERFECT PÉDICURE", price: 39000, durationMinutes: 90, twoPractitionersEligible: true, active: true },
+  { id: "manucure-pedicure-luxury-perfect-manucure-spa", categoryId: "manucure-pedicure", name: "LUXURY PERFECT MANUCURE SPA", price: 32000, durationMinutes: 70, twoPractitionersEligible: true, active: true },
+
+  // ONGLERIE
+  { id: "onglerie-vernis-permanent-pieds", categoryId: "onglerie", name: "VERNIS PERMANENT PIEDS", price: 13000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-polygel-extensions", categoryId: "onglerie", name: "POLYGEL EXTENSIONS", price: 45000, durationMinutes: 120, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-reparation-ongle-1-doigt", categoryId: "onglerie", name: "Réparation Ongle (1 Doigt)", price: 3500, durationMinutes: 20, twoPractitionersEligible: false, active: true },
+  { id: "onglerie-depose-gel-gel-a-enlever", categoryId: "onglerie", name: "DÉPOSE GEL(gel à enlever)", price: 8000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-gel-x", categoryId: "onglerie", name: "GEL X", price: 36000, durationMinutes: 80, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-capsules-permanents-mains", categoryId: "onglerie", name: "CAPSULES PERMANENTS MAINS", price: 21000, durationMinutes: 50, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-capsules-gel-pieds", categoryId: "onglerie", name: "CAPSULES GEL PIEDS", price: 23000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-vernis-permanent-mains", categoryId: "onglerie", name: "VERNIS PERMANENT MAINS", price: 17000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-remplissage-gel", categoryId: "onglerie", name: "REMPLISSAGE GEL", price: 27000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-supplement-french", categoryId: "onglerie", name: "SUPPLÉMENT FRENCH", price: 7500, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "onglerie-supplement-decoration-chrome-cat-eye-baby-boomer", categoryId: "onglerie", name: "SUPPLÉMENT DÉCORATION (Chrome, Cat Eye, Baby Boomer)", price: 10000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+
+  // SPA
+  { id: "spa-soin-du-dos", categoryId: "spa", name: "SOIN DU DOS", price: 65000, durationMinutes: 90, twoPractitionersEligible: true, active: true },
+  { id: "spa-hot-stone-pierres-chaudes", categoryId: "spa", name: "HOT STONE - PIERRES CHAUDES", price: 59000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "spa-reflexology", categoryId: "spa", name: "REFLEXOLOGY", price: 49000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "spa-relax-me-time", categoryId: "spa", name: "RELAX ME TIME", price: 60000, durationMinutes: 80, twoPractitionersEligible: true, active: true },
+  { id: "spa-energissant-sportif", categoryId: "spa", name: "ENERGISSANT SPORTIF", price: 49000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "spa-black-relief-dos", categoryId: "spa", name: "BLACK RELIEF DOS", price: 29000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "spa-de-stress-relaxant", categoryId: "spa", name: "DE STRESS RELAXANT", price: 45000, durationMinutes: 55, twoPractitionersEligible: true, active: true },
+  { id: "spa-deep-tonique", categoryId: "spa", name: "DEEP TONIQUE", price: 49000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "spa-steam-time", categoryId: "spa", name: "STEAM TIME", price: 40000, durationMinutes: 50, twoPractitionersEligible: false, active: true },
+  { id: "spa-express-head-neck-shoulder", categoryId: "spa", name: "EXPRESS HEAD NECK SHOULDER", price: 29000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "spa-magic-vip-rituel-repair-and-reset", categoryId: "spa", name: "MAGIC VIP RITUEL REPAIR AND RESET", price: 140000, durationMinutes: 190, twoPractitionersEligible: true, active: true },
+  { id: "spa-pure-delice", categoryId: "spa", name: "PURE DELICE", price: 90000, durationMinutes: 130, twoPractitionersEligible: true, active: true },
+
+  // SOIN DU VISAGE
+  { id: "soin-du-visage-golden-vip-facial", categoryId: "soin-du-visage", name: "GOLDEN VIP FACIAL", price: 80000, durationMinutes: 90, twoPractitionersEligible: false, active: true },
+  { id: "soin-du-visage-face-lift-and-glow-raffermissant-lift-et-glow", categoryId: "soin-du-visage", name: "FACE LIFT AND GLOW - RAFFERMISSANT LIFT ET GLOW", price: 59000, durationMinutes: 70, twoPractitionersEligible: false, active: true },
+  { id: "soin-du-visage-glow-me-facial", categoryId: "soin-du-visage", name: "GLOW ME FACIAL", price: 49000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+  { id: "soin-du-visage-acne-treatment", categoryId: "soin-du-visage", name: "ACNE TREATMENT", price: 49000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+  { id: "soin-du-visage-hydrate-me-and-restore", categoryId: "soin-du-visage", name: "HYDRATE ME AND RESTORE", price: 54000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+  { id: "soin-du-visage-hydrafacial-deep-clean", categoryId: "soin-du-visage", name: "HYDRAFACIAL DEEP CLEAN", price: 55000, durationMinutes: 75, twoPractitionersEligible: false, active: true },
+  { id: "soin-du-visage-detox-me-facial", categoryId: "soin-du-visage", name: "DETOX ME FACIAL", price: 45000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+
+  // ÉPILATION
+  { id: "epilation-epilation-menton", categoryId: "epilation", name: "ÉPILATION MENTON", price: 6000, durationMinutes: 25, twoPractitionersEligible: false, active: true },
+  { id: "epilation-pack-epilations-completes", categoryId: "epilation", name: "PACK ÉPILATIONS COMPLÈTES", price: 45000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+  { id: "epilation-epilation-bras", categoryId: "epilation", name: "ÉPILATION BRAS", price: 9000, durationMinutes: 25, twoPractitionersEligible: true, active: true },
+  { id: "epilation-epilation-jambes-completes", categoryId: "epilation", name: "ÉPILATION JAMBES COMPLÈTES", price: 14000, durationMinutes: 45, twoPractitionersEligible: true, active: true },
+  { id: "epilation-epilation-maillot-integral", categoryId: "epilation", name: "ÉPILATION MAILLOT INTÉGRAL", price: 17000, durationMinutes: 45, twoPractitionersEligible: false, active: true },
+  { id: "epilation-epilation-demi-jambes", categoryId: "epilation", name: "ÉPILATION DEMI - JAMBES", price: 11000, durationMinutes: 25, twoPractitionersEligible: true, active: true },
+  { id: "epilation-epilation-duvet-ventre", categoryId: "epilation", name: "ÉPILATION DUVET/VENTRE", price: 7000, durationMinutes: 25, twoPractitionersEligible: false, active: true },
+  { id: "epilation-epilation-maillot-bresilien", categoryId: "epilation", name: "ÉPILATION MAILLOT BRÉSILIEN", price: 12000, durationMinutes: 25, twoPractitionersEligible: false, active: true },
+  { id: "epilation-epilation-aisselles", categoryId: "epilation", name: "ÉPILATION AISSELLES", price: 7000, durationMinutes: 25, twoPractitionersEligible: true, active: true },
+  { id: "epilation-epilation-sourcils", categoryId: "epilation", name: "ÉPILATION SOURCILS", price: 7000, durationMinutes: 15, twoPractitionersEligible: false, active: true },
+  { id: "epilation-soin-vagifacial", categoryId: "epilation", name: "SOIN VAGIFACIAL", price: 34000, durationMinutes: 35, twoPractitionersEligible: false, active: true },
+  { id: "epilation-soin-vagifacial-maillot-integral", categoryId: "epilation", name: "SOIN VAGIFACIAL+ MAILLOT INTEGRAL", price: 49000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+
+  // MINI&CO — Hair
+  { id: "mini-co-mini-hair-treat-mini-co", categoryId: "mini-co", subcategory: "Hair", name: "MINI HAIR TREAT (Mini&co)", price: 28000, durationMinutes: 90, twoPractitionersEligible: true, active: true },
+  { id: "mini-co-mini-hair-treat-braids-mini-co", categoryId: "mini-co", subcategory: "Hair", name: "MINI HAIR TREAT+ BRAIDS (Mini&co)", price: 46000, durationMinutes: 180, twoPractitionersEligible: true, active: true },
+  { id: "mini-co-supplement-coiffure-enfant", categoryId: "mini-co", subcategory: "Hair", name: "SUPPLEMENT COIFFURE ENFANT", price: 10000, durationMinutes: 50, twoPractitionersEligible: false, active: true },
+  { id: "mini-co-definition-boucles-enfant", categoryId: "mini-co", subcategory: "Hair", name: "DEFINITION BOUCLES ENFANT", price: 9000, durationMinutes: 30, twoPractitionersEligible: false, active: true },
+  { id: "mini-co-defaire-tresses-enfant", categoryId: "mini-co", subcategory: "Hair", name: "DEFAIRE TRESSES ENFANT", price: 5000, durationMinutes: 45, twoPractitionersEligible: true, active: true },
+  { id: "mini-co-coupe-pointes-enfants-mini-co", categoryId: "mini-co", subcategory: "Hair", name: "COUPE POINTES ENFANTS (Mini&co)", price: 9000, durationMinutes: 25, twoPractitionersEligible: false, active: true },
+  { id: "mini-co-supplement-brushing-enfant", categoryId: "mini-co", subcategory: "Hair", name: "SUPPLEMENT BRUSHING ENFANT", price: 9000, durationMinutes: 60, twoPractitionersEligible: false, active: true },
+  { id: "mini-co-supplements-tresses-enfants-mini-and-co", categoryId: "mini-co", subcategory: "Hair", name: "SUPPLÉMENTS TRESSES ENFANTS MINI AND CO", price: 19000, durationMinutes: 60, twoPractitionersEligible: true, active: true },
+
+  // MINI&CO — Spa
+  { id: "mini-co-mini-jely-manucure", categoryId: "mini-co", subcategory: "Spa", name: "MINI JELLY MANUCURE", price: 12000, durationMinutes: 30, twoPractitionersEligible: true, active: true },
+  { id: "mini-co-mini-cutie-pedicure", categoryId: "mini-co", subcategory: "Spa", name: "MINI CUTIE PÉDICURE", price: 15000, durationMinutes: 35, twoPractitionersEligible: true, active: true },
+];
+
+export function serviceById(id: string) {
+  return SERVICES.find((s) => s.id === id);
+}
+
+// Soin du visage, épilation, spa et head spa (sous-catégorie de Coiffure) ne se font qu'aux
+// Almadies — Sea Plaza n'a pas de cabine pour eux (même règle que le site de réservation b&co).
+const ALMADIES_ONLY_CATEGORY_IDS = new Set(["soin-du-visage", "epilation", "spa"]);
+
+/** Le salon propose-t-il cette prestation ? */
+export function serviceOfferedAt(service: Service, salonId: string) {
+  if (salonId === "almadies") return true;
+  return !ALMADIES_ONLY_CATEGORY_IDS.has(service.categoryId) && service.subcategory !== "Head Spa";
+}
+
+/** Les catégories de produits — des marques. Ordre d'affichage, « Autres » en dernier. Les
+ *  boissons ne sont pas là : c'est leur propre famille (`Boisson`, ADR 0016). */
+export const PRODUCT_CATEGORIES: ProductCategory[] = [
+  { id: "kerastase", name: "Kérastase" },
+  { id: "saryna-keys", name: "Saryna Keys" },
+  { id: "nefertiti", name: "Nefertiti" },
+  { id: "beccy-wave", name: "Beccy Wave" },
+  { id: "autres", name: "Autres" },
+];
+
+/** Les gammes Kérastase — sous-catégories de la catégorie « kerastase » (comme les sous-catégories
+ *  de « coiffure » côté prestations). Ordre d'affichage. Seule « kerastase » a des sous-catégories. */
+export const KERASTASE_GAMMES = [
+  "Nutritive",
+  "Genesis",
+  "Gloss Absolu",
+  "Symbiose",
+  "Chroma Absolu",
+  "Blond Absolu",
+  "Chronologiste",
+  "Force",
+  "Thérapiste",
+  "Curl Manifesto",
+  "Première",
+  "Elixir Ultime",
+] as const;
+
+export const PRODUITS: Produit[] = [
+  { id: "nutritive-8hmns-serum-90ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive 8HMNS Serum 90ml", price: 42000, stock: 18, active: true, image: "/images/produits/nutritive-8hmns-serum-90ml.jpg" },
+  { id: "nutritive-bain-riche-250ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Bain Riche 250ml", price: 23000, stock: 55, active: true, image: "/images/produits/nutritive-bain-riche-250ml.jpg" },
+  { id: "nutritive-bain-satin-250ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Bain Satin 250ml", price: 23000, stock: 28, active: true, image: "/images/produits/nutritive-bain-satin-250ml.jpg" },
+  { id: "nutritive-lait-vital-200ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Lait Vital 200ml", price: 32000, stock: 1, active: true, image: "/images/produits/nutritive-lait-vital-200ml.jpg" },
+  { id: "nutritive-masque-riche-200ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Masque Riche 200ml", price: 42000, stock: 38, active: true, image: "/images/produits/nutritive-masque-riche-200ml.jpg" },
+  { id: "nutritive-masque-intense-200ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Masque Intense 200ml", price: 42000, stock: 11, active: true, image: "/images/produits/nutritive-masque-intense-200ml.jpg" },
+  { id: "nutritive-nectar-therm-150ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Nectar Therm 150ml", price: 32000, stock: 48, active: true, image: "/images/produits/nutritive-nectar-therm-150ml.jpg" },
+  { id: "nutritive-scalp-serum-90ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Scalp Serum 90ml", price: 42000, stock: 21, active: true, image: "/images/produits/nutritive-scalp-serum-90ml.jpg" },
+  { id: "nutritive-soin-150ml", categoryId: "kerastase", subcategory: "Nutritive", name: "Nutritive Soin 150ml", price: 32000, stock: 58, active: true, image: "/images/produits/nutritive-soin-150ml.jpg" },
+  { id: "genesis-bain-riche-250ml", categoryId: "kerastase", subcategory: "Genesis", name: "Genesis Bain Riche 250ml", price: 24000, stock: 4, active: true, image: "/images/produits/genesis-bain-riche-250ml.jpg" },
+  { id: "genesis-cure-90ml", categoryId: "kerastase", subcategory: "Genesis", name: "Genesis Cure 90ml", price: 42000, stock: 41, active: true, image: "/images/produits/genesis-cure-90ml.jpg" },
+  { id: "genesis-fluide-150ml", categoryId: "kerastase", subcategory: "Genesis", name: "Genesis Fluide 150ml", price: 32000, stock: 14, active: true, image: "/images/produits/genesis-fluide-150ml.jpg" },
+  { id: "genesis-masque-200ml", categoryId: "kerastase", subcategory: "Genesis", name: "Genesis Masque 200ml", price: 42000, stock: 51, active: true, image: "/images/produits/genesis-masque-200ml.jpg" },
+  { id: "gloss-absolu-bain-250ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "Gloss Absolu Bain 250ml", price: 24000, stock: 0, active: true, image: "/images/produits/gloss-absolu-bain-250ml.jpg" },
+  { id: "k-gloss-absolu-bain-riche-250ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Bain Riche 250ml", price: 24000, stock: 34, active: true, image: "/images/produits/k-gloss-absolu-bain-riche-250ml.jpg" },
+  { id: "k-gloss-absolu-fondant-250ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Fondant 250ml", price: 32000, stock: 7, active: true, image: "/images/produits/k-gloss-absolu-fondant-250ml.jpg" },
+  { id: "k-gloss-absolu-cream-250ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Cream 250ml", price: 39000, stock: 44, active: true, image: "/images/produits/k-gloss-absolu-cream-250ml.jpg" },
+  { id: "k-gloss-absolu-hair-mist-30ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Hair Mist 30ml", price: 32000, stock: 17, active: true, image: "/images/produits/k-gloss-absolu-hair-mist-30ml.jpg" },
+  { id: "k-gloss-absolu-masque-nutritive-200ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Masque Nutritive 200ml", price: 42000, stock: 54, active: true, image: "/images/produits/k-gloss-absolu-masque-nutritive-200ml.jpg" },
+  { id: "k-gloss-absolu-oil-45ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Oil 45ml", price: 35000, stock: 27, active: true, image: "/images/produits/k-gloss-absolu-oil-45ml.jpg" },
+  { id: "k-gloss-absolu-spray-190ml", categoryId: "kerastase", subcategory: "Gloss Absolu", name: "K Gloss Absolu Spray 190ml", price: 33000, stock: 0, active: true, image: "/images/produits/k-gloss-absolu-spray-190ml.jpg" },
+  { id: "k-symbiose-bain-creme-250ml", categoryId: "kerastase", subcategory: "Symbiose", name: "K Symbiose Bain Creme 250ml", price: 24000, stock: 10, active: true, image: "/images/produits/k-symbiose-bain-creme-250ml.jpg" },
+  { id: "k-symbiose-bain-purete-250ml", categoryId: "kerastase", subcategory: "Symbiose", name: "K Symbiose Bain Pureté 250ml", price: 24000, stock: 47, active: true, image: "/images/produits/k-symbiose-bain-purete-250ml.jpg" },
+  { id: "k-symbiose-fondant-hydra-200ml", categoryId: "kerastase", subcategory: "Symbiose", name: "K Symbiose Fondant Hydra 200ml", price: 32000, stock: 20, active: true, image: "/images/produits/k-symbiose-fondant-hydra-200ml.jpg" },
+  { id: "k-symbiose-masque-200ml", categoryId: "kerastase", subcategory: "Symbiose", name: "K Symbiose Masque 200ml", price: 42000, stock: 57, active: true, image: "/images/produits/k-symbiose-masque-200ml.jpg" },
+  { id: "k-symbiose-micropeel-200ml", categoryId: "kerastase", subcategory: "Symbiose", name: "K Symbiose Micropeel 200ml", price: 39000, stock: 30, active: true, image: "/images/produits/k-symbiose-micropeel-200ml.jpg" },
+  { id: "k-symbiose-serum-90ml", categoryId: "kerastase", subcategory: "Symbiose", name: "K Symbiose Serum 90ml", price: 42000, stock: 3, active: true, image: "/images/produits/k-symbiose-serum-90ml.jpg" },
+  { id: "k-chroma-absolu-bain-lim-us-250ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Absolu Bain Lim US 250ml", price: 23000, stock: 13, active: true, image: "/images/produits/k-chroma-absolu-bain-lim-us-250ml.jpg" },
+  { id: "k-chroma-absolu-bain-opa-us-250ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Absolu Bain OPA US 250ml", price: 23000, stock: 50, active: true, image: "/images/produits/k-chroma-absolu-bain-opa-us-250ml.jpg" },
+  { id: "k-chroma-absolu-fluide-250ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Absolu Fluide 250ml", price: 27000, stock: 23, active: true, image: "/images/produits/k-chroma-absolu-fluide-250ml.jpg" },
+  { id: "k-chroma-absolu-fondant-200ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Absolu Fondant 200ml", price: 32000, stock: 60, active: true, image: "/images/produits/k-chroma-absolu-fondant-200ml.jpg" },
+  { id: "k-chroma-absolu-leave-in-150ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Absolu Leave In 150ml", price: 28000, stock: 33, active: true, image: "/images/produits/k-chroma-absolu-leave-in-150ml.jpg" },
+  { id: "k-chroma-absolu-mask-reco-200ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Absolu Mask Reco 200ml", price: 42000, stock: 6, active: true, image: "/images/produits/k-chroma-absolu-mask-reco-200ml.jpg" },
+  { id: "k-chroma-oil-75ml", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Oil 75ml", price: 42000, stock: 43, active: true, image: "/images/produits/k-chroma-oil-75ml.jpg" },
+  { id: "k-chroma-oil", categoryId: "kerastase", subcategory: "Chroma Absolu", name: "K Chroma Oil", price: 35000, stock: 16, active: true },
+  { id: "k-blond-absolu-night-serum-90ml", categoryId: "kerastase", subcategory: "Blond Absolu", name: "K Blond Absolu Night Serum 90ml", price: 42000, stock: 26, active: true, image: "/images/produits/k-blond-absolu-night-serum-90ml.jpg" },
+  { id: "k-blond-oil-75ml", categoryId: "kerastase", subcategory: "Blond Absolu", name: "K Blond Oil 75ml", price: 35000, stock: 0, active: true },
+  { id: "k-blond-oil-75ml-2", categoryId: "kerastase", subcategory: "Blond Absolu", name: "K Blond Oil 75ml", price: 42000, stock: 36, active: true, image: "/images/produits/k-blond-oil-75ml-2.jpg" },
+  { id: "ker-blond-bain-uviolet-250ml", categoryId: "kerastase", subcategory: "Blond Absolu", name: "Ker Blond Bain Uviolet 250ml", price: 24000, stock: 9, active: true, image: "/images/produits/ker-blond-bain-uviolet-250ml.jpg" },
+  { id: "ker-blond-cicaflash-250ml", categoryId: "kerastase", subcategory: "Blond Absolu", name: "Ker Blond Cicaflash 250ml", price: 32000, stock: 46, active: true, image: "/images/produits/ker-blond-cicaflash-250ml.jpg" },
+  { id: "ker-blond-cicaplasme-150ml", categoryId: "kerastase", subcategory: "Blond Absolu", name: "Ker Blond Cicaplasme 150ml", price: 26000, stock: 19, active: true, image: "/images/produits/ker-blond-cicaplasme-150ml.jpg" },
+  { id: "ker-blond-masque-ultravio", categoryId: "kerastase", subcategory: "Blond Absolu", name: "Ker Blond Masque Ultravio", price: 42000, stock: 56, active: true, image: "/images/produits/ker-blond-masque-ultravio.jpg" },
+  { id: "k-chrono-oil-75ml", categoryId: "kerastase", subcategory: "Chronologiste", name: "K Chrono Oil 75ml", price: 51000, stock: 2, active: true },
+  { id: "k-chrono-oil-75ml-2", categoryId: "kerastase", subcategory: "Chronologiste", name: "K Chrono Oil 75ml", price: 66000, stock: 39, active: true, image: "/images/produits/k-chrono-oil-75ml-2.jpg" },
+  { id: "k-chrono-bain-250ml", categoryId: "kerastase", subcategory: "Chronologiste", name: "K Chrono Bain 250ml", price: 27000, stock: 12, active: true, image: "/images/produits/k-chrono-bain-250ml.jpg" },
+  { id: "k-chrono-masque-200ml", categoryId: "kerastase", subcategory: "Chronologiste", name: "K Chrono Masque 200ml", price: 47000, stock: 49, active: true, image: "/images/produits/k-chrono-masque-200ml.jpg" },
+  { id: "k-chrono-pre-shampoing-200ml", categoryId: "kerastase", subcategory: "Chronologiste", name: "K Chrono Pre Shampoing 200ml", price: 27000, stock: 22, active: true, image: "/images/produits/k-chrono-pre-shampoing-200ml.jpg" },
+  { id: "ks-chrono-thermique-150ml", categoryId: "kerastase", subcategory: "Chronologiste", name: "KS Chrono Thermique 150ml", price: 32000, stock: 59, active: true, image: "/images/produits/ks-chrono-thermique-150ml.jpg" },
+  { id: "k-chrono-bain-250ml-2", categoryId: "kerastase", subcategory: "Chronologiste", name: "K Chrono Bain 250ml", price: 29000, stock: 32, active: true, image: "/images/produits/k-chrono-bain-250ml-2.jpg" },
+  { id: "ker-res-masque-force-archi-200ml", categoryId: "kerastase", subcategory: "Force", name: "Ker Res Masque Force Archi 200ml", price: 38000, stock: 42, active: true, image: "/images/produits/ker-res-masque-force-archi-200ml.jpg" },
+  { id: "ker-resist-bain-force-archi-250m", categoryId: "kerastase", subcategory: "Force", name: "Ker Resist Bain Force Archi 250m", price: 23000, stock: 15, active: true, image: "/images/produits/ker-resist-bain-force-archi-250m.jpg" },
+  { id: "ker-resisr-ciment-anti-usure-200ml", categoryId: "kerastase", subcategory: "Force", name: "Ker Resisr Ciment Anti Usure 200ml", price: 31000, stock: 52, active: true, image: "/images/produits/ker-resisr-ciment-anti-usure-200ml.jpg" },
+  { id: "ker-res-serum-therapiste-2-15ml", categoryId: "kerastase", subcategory: "Thérapiste", name: "Ker Res Serum Therapiste 2*15ml", price: 32000, stock: 0, active: true, image: "/images/produits/ker-res-serum-therapiste-2-15ml.jpg" },
+  { id: "ker-res-serum-bain-therapiste-250ml", categoryId: "kerastase", subcategory: "Thérapiste", name: "Ker Res Serum Bain Therapiste 250ml", price: 24000, stock: 35, active: true, image: "/images/produits/ker-res-serum-bain-therapiste-250ml.jpg" },
+  { id: "bain-nourissant-curl-250ml", categoryId: "kerastase", subcategory: "Curl Manifesto", name: "Bain Nourissant Curl 250ml", price: 24000, stock: 45, active: true, image: "/images/produits/bain-nourissant-curl-250ml.jpg" },
+  { id: "creme-curl-150ml", categoryId: "kerastase", subcategory: "Curl Manifesto", name: "Creme Curl 150ml", price: 32000, stock: 18, active: true, image: "/images/produits/creme-curl-150ml.jpg" },
+  { id: "gelee-curl-150ml", categoryId: "kerastase", subcategory: "Curl Manifesto", name: "Gelee Curl 150ml", price: 32000, stock: 55, active: true, image: "/images/produits/gelee-curl-150ml.jpg" },
+  { id: "curl-huile-50ml", categoryId: "kerastase", subcategory: "Curl Manifesto", name: "Curl Huile 50ml", price: 41000, stock: 28, active: true, image: "/images/produits/curl-huile-50ml.jpg" },
+  { id: "lotion-refresher-curl-190ml", categoryId: "kerastase", subcategory: "Curl Manifesto", name: "Lotion Refresher Curl 190ml", price: 33000, stock: 1, active: true, image: "/images/produits/lotion-refresher-curl-190ml.jpg" },
+  { id: "masque-curl-200ml", categoryId: "kerastase", subcategory: "Curl Manifesto", name: "Masque Curl 200ml", price: 41000, stock: 38, active: true, image: "/images/produits/masque-curl-200ml.jpg" },
+  { id: "k-alpha-bain-renovateur-250ml", categoryId: "kerastase", subcategory: "Première", name: "K Alpha Bain Renovateur 250ml", price: 32000, stock: 48, active: true, image: "/images/produits/k-alpha-bain-renovateur-250ml.jpg" },
+  { id: "k-alpha-fondant-fluidity-200ml", categoryId: "kerastase", subcategory: "Première", name: "K Alpha Fondant Fluidity 200ml", price: 41000, stock: 21, active: true, image: "/images/produits/k-alpha-fondant-fluidity-200ml.jpg" },
+  { id: "k-alpha-huile-lumiere-30ml", categoryId: "kerastase", subcategory: "Première", name: "K Alpha Huile Lumiere 30ml", price: 41000, stock: 58, active: true, image: "/images/produits/k-alpha-huile-lumiere-30ml.jpg" },
+  { id: "k-alpha-lotion-jelly-250ml", categoryId: "kerastase", subcategory: "Première", name: "K Alpha Lotion Jelly 250ml", price: 58000, stock: 31, active: true, image: "/images/produits/k-alpha-lotion-jelly-250ml.jpg" },
+  { id: "k-alpha-masque-fill-force-200ml", categoryId: "kerastase", subcategory: "Première", name: "K Alpha Masque Fill Force 200ml", price: 53000, stock: 4, active: true, image: "/images/produits/k-alpha-masque-fill-force-200ml.jpg" },
+  { id: "k-alpha-serum-fondamental-90ml", categoryId: "kerastase", subcategory: "Première", name: "K Alpha Serum Fondamental 90ml", price: 48000, stock: 41, active: true, image: "/images/produits/k-alpha-serum-fondamental-90ml.jpg" },
+  { id: "k-elixir-oil-75ml", categoryId: "kerastase", subcategory: "Elixir Ultime", name: "K Elixir Oil 75ml", price: 41000, stock: 51, active: true, image: "/images/produits/k-elixir-oil-75ml.jpg" },
+  { id: "k-elixir-oil-30ml", categoryId: "kerastase", subcategory: "Elixir Ultime", name: "K Elixir Oil 30ml", price: 26000, stock: 24, active: true, image: "/images/produits/k-elixir-oil-30ml.jpg" },
+  { id: "ker-elixir-ult-bain-250ml", categoryId: "kerastase", subcategory: "Elixir Ultime", name: "Ker Elixir ULT Bain 250ml", price: 23000, stock: 0, active: true, image: "/images/produits/ker-elixir-ult-bain-250ml.jpg" },
+  { id: "ker-elixir-ult-masque-200ml", categoryId: "kerastase", subcategory: "Elixir Ultime", name: "Ker Elixir ULT Masque 200ml", price: 42000, stock: 34, active: true, image: "/images/produits/ker-elixir-ult-masque-200ml.jpg" },
+  { id: "antiseptique-saryna-keys", categoryId: "saryna-keys", name: "Antisceptique Saryna Keys", price: 3000, stock: 24, active: true, image: "/images/produits/antiseptique-saryna-keys.jpg" },
+  { id: "damage-repair-oil-saryna-keys", categoryId: "saryna-keys", name: "Damage repair oil Saryna Keys", price: 30000, stock: 16, active: true, image: "/images/produits/damage-repair-oil-saryna-keys.jpg" },
+  { id: "nefertiti-kinky-straight", categoryId: "nefertiti", name: "Nefertiti Kinky Straight", price: 125000, stock: 5, active: true, image: "/images/produits/nefertiti-kinky-straight.jpg" },
+  { id: "hd-lace-frontal-nefertiti-kinky-straight", categoryId: "nefertiti", name: "HD lace frontal Nefertiti Kinky straight", price: 210000, stock: 3, active: true, image: "/images/produits/hd-lace-frontal-nefertiti-kinky-straight.jpg" },
+  { id: "ready-made-ponytail-beccy-wave", categoryId: "beccy-wave", name: "Ready made ponytail Beccy wave", price: 125000, stock: 4, active: true, image: "/images/produits/ready-made-ponytail-beccy-wave.jpg" },
+  { id: "becky-wave-raw-hair", categoryId: "beccy-wave", name: "Becky wave raw hair", price: 78900, stock: 6, active: true, image: "/images/produits/becky-wave-raw-hair.jpg" },
+  { id: "correcteur-fluide-swiss-perfection-haute-couvrance", categoryId: "autres", name: "Correcteur Fluide « Swiss Perfection » – Haute Couvrance", price: 38500, stock: 14, active: true, image: "/images/produits/correcteur-fluide-swiss-perfection-haute-couvrance.jpg" },
+  { id: "peigne-bijou-eclat-de-mariee-finition-or-rose", categoryId: "autres", name: "Peigne Bijou « Éclat de Mariée » – Finition Or Rose", price: 26000, stock: 10, active: true, image: "/images/produits/peigne-bijou-eclat-de-mariee-finition-or-rose.jpg" },
+];
+
+export function produitById(id: string) {
+  return PRODUITS.find((p) => p.id === id);
+}

@@ -1,0 +1,168 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+
+  /* Brand tokens — shared with B&Co (app/globals.css) so the gift-card
+     experience reads as the same salon, not a spin-off. */
+  --core-brand-color: #fdcfca;
+  --core-brand-color-2: #eddcda;
+  --on-core-brand-color: #2d2d2d;
+  --text-secondary: #344054;
+  /* Darkened from the original #a27576 (3.9:1 on white, below WCAG AA's 4.5:1 for
+     body text) — this token is used as label/text color across "Modifier" pills,
+     outline buttons, and payment method names, so the failure was systemic. Same
+     hue and warmth, just enough darker to read as intentional rather than faint. */
+  --button-2-color: #8f6162;
+  --brand-color-1: rgba(216, 184, 180, 0.5);
+
+  --brand-taupe-muted: #886666;
+  --brand-cream: #f8f6f9;
+  --brand-rose-soft: #fef0ee;
+  --brand-lilac: #e4c8ff;
+
+  /* Deep ground for the immersive/3D scenes — the warm palette above reads
+     as jewellery on a dark stage instead of pastel-on-white like the main site. */
+  --stage-black: #120c0d;
+  --stage-black-2: #1c1315;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand: var(--core-brand-color);
+  --color-brand-2: var(--core-brand-color-2);
+  --color-brand-ink: var(--on-core-brand-color);
+  --color-brand-button: var(--button-2-color);
+  --color-brand-taupe: var(--brand-taupe-muted);
+  --color-brand-cream: var(--brand-cream);
+  --color-brand-rose: var(--brand-rose-soft);
+  --color-brand-lilac: var(--brand-lilac);
+  --color-stage: var(--stage-black);
+  --color-stage-2: var(--stage-black-2);
+
+  --font-sans: var(--font-cabinet-grotesk);
+  --font-heading: var(--font-prata);
+  --font-display: var(--font-benedict);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-cabinet-grotesk), Arial, Helvetica, sans-serif;
+  font-weight: 450;
+}
+
+/* Registered as animatable percentages so the watercolor hover-ripple mask
+   (components/canvas/watercolor-background.tsx) can glide between pointer
+   positions via a plain CSS transition instead of snapping. */
+@property --mx {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --my {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+
+@keyframes card-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.animate-card-float {
+  animation: card-float 6s ease-in-out infinite;
+}
+
+/* Screen-to-screen fade (components/ui/screen-transition.tsx). Pure
+   opacity, no blur, sequential: the outgoing screen fades fully out
+   (150ms), then the incoming one fades in (150ms) — 300ms total. Never
+   applied to the watercolor background, which is portaled out to a
+   persistent root above this wrapper — see
+   components/canvas/watercolor-background.tsx — so there's nothing behind
+   the faded-out content to flash white. */
+@keyframes screen-content-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes screen-content-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-screen-exit {
+  animation: screen-content-exit 150ms ease-in both;
+}
+.animate-screen-enter {
+  animation: screen-content-enter 150ms ease-out both;
+}
+
+/* Mobile recap panel (components/ui/recap-badge.tsx): same 150ms timing as
+   the screen transition above, for one consistent motion vocabulary, plus a
+   small scale so a floating/dismissible panel reads differently from a
+   full-page fade. */
+@keyframes recap-panel-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+@keyframes recap-panel-exit {
+  from {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+}
+.animate-recap-panel-enter {
+  animation: recap-panel-enter 150ms ease-out both;
+}
+.animate-recap-panel-exit {
+  animation: recap-panel-exit 120ms ease-in both;
+}
+
+/* Intro gate CTA (components/sections/intro-gate.tsx): the "click/swipe to
+   open" prompt is underlined, and it's that underline — not the text — that
+   animates: it grows to the text's full width, then retracts back, looping.
+   Grows from the center on mobile (matching the centered CTA layout there),
+   from the left from sm up (matching the left-aligned layout). Skipped
+   entirely when the visitor prefers reduced motion. */
+@keyframes gate-underline {
+  0%,
+  100% {
+    transform: scaleX(0);
+  }
+  50% {
+    transform: scaleX(1);
+  }
+}
+.animate-gate-underline {
+  transform-origin: center;
+  animation: gate-underline 3.4s ease-in-out infinite;
+}
+@media (min-width: 640px) {
+  .animate-gate-underline {
+    transform-origin: left;
+  }
+}

@@ -1,0 +1,58 @@
+import { computeTotals } from "@/components/providers/app-data-provider";
+import { cn, formatFcfa } from "@/lib/utils";
+import type { Sale } from "@/lib/data/types";
+
+/**
+ * The itemised discount lines — one per mechanism that actually reduced the total, plus the
+ * gift-card reliquat as a caption. The granted-discount motif is internal: it never prints on the
+ * receipt, only shows in Récap des ventes (`showReason`). Also carries the « prestations
+ * déjà payées » lines (Pack / Abonnement, ADR 0017) — prepaid, not a Remise, so listed above the
+ * discounts and not counted in `totalDiscount`. Shared by the receipt step and the read-only
+ * receipt in Récap des ventes so the two never drift. Renders nothing when the sale carries
+ * neither a discount nor a coverage.
+ */
+export function DiscountBreakdown({ sale, className, showReason = false }: { sale: Sale; className?: string; showReason?: boolean }) {
+  const t = computeTotals(sale);
+  if (t.totalDiscount <= 0 && t.coverageDiscount <= 0) return null;
+
+  return (
+    <div className={cn("flex flex-col gap-1 text-success", className)}>
+      {t.coverageByInstance.map((c) => (
+        <div key={c.instanceId} className="flex justify-between gap-3">
+          <span>Déjà payé — {c.planLabel}</span>
+          <span className="tabular-nums">−{formatFcfa(c.amount)}</span>
+        </div>
+      ))}
+      {t.remiseBreakdown.map((r) => (
+        <div key={r.id} className="flex justify-between gap-3">
+          <span>
+            Remise {r.mode === "pourcentage" ? `${r.value} %` : "accordée"} · {r.lineIds.length}{" "}
+            {r.lineIds.length > 1 ? "prestations" : "prestation"}
+            {r.managerCode && " · code manager"}
+          </span>
+          <span className="tabular-nums">−{formatFcfa(r.amount)}</span>
+        </div>
+      ))}
+      {t.loyaltyDiscount > 0 && (
+        <div className="flex justify-between gap-3">
+          <span>Points fidélité ({sale.loyaltyPointsUsed} pts)</span>
+          <span className="tabular-nums">−{formatFcfa(t.loyaltyDiscount)}</span>
+        </div>
+      )}
+      {t.giftCardDiscount > 0 && (
+        <div className="flex justify-between gap-3">
+          <span>
+            Carte cadeau{sale.giftCardApplied?.kind === "prestations" && " (prestations)"}
+          </span>
+          <span className="tabular-nums">−{formatFcfa(t.giftCardDiscount)}</span>
+        </div>
+      )}
+      {showReason && sale.remiseReason && t.grantedDiscount > 0 && (
+        <p className="text-xs text-base-content/55">Motif de la remise : {sale.remiseReason}</p>
+      )}
+      {t.giftCardDiscount > 0 && t.giftCardRemaining > 0 && (
+        <p className="text-xs text-base-content/55">Reste {formatFcfa(t.giftCardRemaining)} sur la carte cadeau.</p>
+      )}
+    </div>
+  );
+}
