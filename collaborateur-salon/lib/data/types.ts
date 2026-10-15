@@ -1,0 +1,77 @@
+/** Mêmes rôles que point-de-vente (`lib/data/types.ts`). */
+export type Role = "coiffeuse" | "estheticienne" | "menage" | "accueil";
+
+/** La réponse à une demande de congé — jamais « en attente » (voir CONTEXT.md). */
+export type DecisionConge = "accepte" | "refuse";
+
+/**
+ * Un collaborateur, tel que l'app le voit. `id` est le même que `Praticienne.id` de point-de-vente :
+ * c'est aussi le contenu de son Code QR, que le scanner de point-de-vente reconnaît tel quel.
+ */
+export type Collaborateur = {
+  id: string;
+  /** Le prénom — c'est lui qu'on affiche. */
+  name: string;
+  /** Nom de famille, renseigné par le salon. */
+  nom: string | null;
+  /** Matricule donné par le salon (« BC-0012 »), affiché sous le prénom dans Paramètres. */
+  matricule: string | null;
+  role: Role;
+  /** 9 chiffres, sans indicatif ni espaces — affiché « 77 777 77 77 ». */
+  phone: string;
+  /** Renseignée par le salon ; le collaborateur la voit dans Paramètres sans pouvoir la changer. */
+  email: string | null;
+  /** Absente ⇒ première connexion pas encore faite (la photo y est obligatoire). */
+  photoUrl: string | null;
+};
+
+/** Le compte de connexion d'un collaborateur — données simulées. */
+export type Compte = {
+  /** Code secret, 4 chiffres. Null ⇒ première connexion : le collaborateur le définit lui-même. */
+  code: string | null;
+};
+
+/** Un message vocal enregistré sur le téléphone (data URL, gardée en local — pas de backend). */
+export type MessageVocal = { url: string; dureeSec: number };
+
+/** La raison d'un congé : écrite, dite en vocal (pour qui ne lit pas), ou les deux — au moins l'un. */
+export type RaisonConge = { texte?: string; vocal?: MessageVocal };
+
+export type DemandeConge = {
+  id: string;
+  collaborateurId: string;
+  /** ISO date (yyyy-MM-dd). */
+  debut: string;
+  /** ISO date (yyyy-MM-dd), ≥ debut. */
+  fin: string;
+  /** La raison, écrite et/ou en vocal. */
+  raison: RaisonConge | null;
+  /** ISO datetime. */
+  envoyeeLe: string;
+  /** Absente ⇒ pas encore de décision : rien ne s'affiche à l'Accueil. */
+  decision: DecisionConge | null;
+  /** Le collaborateur a fermé la réponse à l'Accueil : elle n'y reparaît plus. */
+  reponseFermee?: boolean;
+};
+
+export type DemandeAvance = {
+  id: string;
+  collaborateurId: string;
+  /** En francs CFA, entier > 0. */
+  montant: number;
+  /** ISO datetime. */
+  envoyeeLe: string;
+};
+
+/** Les deux salons Beauty and Co. Sur le Planning, chacun a sa couleur (rose, taupe), pas de photo. */
+export type Salon = "almadies" | "sea-plaza";
+
+/** Une partie de journée dans un salon. Heures « HH:mm », `fin` > `debut`. */
+export type Creneau = { salon: Salon; debut: string; fin: string };
+
+/** Un jour du Planning : aucun créneau ⇒ repos ; deux ⇒ journée coupée entre les deux salons. */
+export type JourPlanning = {
+  /** ISO date (yyyy-MM-dd). */
+  date: string;
+  creneaux: Creneau[];
+};
